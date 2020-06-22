@@ -1,0 +1,1039 @@
+// Variants included:   Glinski, McCooey, MiniHexchess, Shafran, Starchess
+// Variants to include: De Vasa, Brusky, Wellisch (3-player)
+// Status: In progress. All functionality touched upon, but some features not complete.
+
+// Notes on Ludii features (v0.9.3) supporting game design.
+//   * Defines involving relative motion on hexagonal boards could be made more concise with better support for relative direction terminology.
+//   * The rhombus board consists of hexagonal spaces oriented vertically. There is no way to specify a different orientation, as there is for hexagon boards.
+//   * When define arguments are named (e.g., with if: ifAfterwards: to: size: stack:), there cannot be a space between the colon and the following argument.
+//   * A means of unit testing would be helpful. The notion of phases can be leveraged to include a test phase,
+//     but it doesn't appear to support the creation of temporary games for test purposes.
+//   * Options that are not intended for individual selection by the end user should be able to be specified as "hidden",
+//     i.e., not include in the user-visible menu controls. For example, if some options specify removal of board spaces,
+//     and others specify starting locations of pieces, then some combinations could be incompatible.
+//   * Rules documentation would be aided by support for option-specific rule information.
+
+// 2020-06-21: TODO: Complete implementation of castling
+// 2020-06-21: TODO: Test all functionality
+// 2020-06-21: TODO: Provide feedback to Ludii. (See above notes.)
+// 2020-06-21: TODO: Refactor to make more concise
+// 2020-06-21: TODO: Implement De Vasa, Brusky, and Wellisch variants
+
+(define "CaptureStep_To"
+    (step #1
+        (to
+            if:(is Enemy (who at:(to)))
+            (effect (remove (to)))
+        )
+    )
+)
+
+(define "CaptureStep_ToDiagForward"
+   (step (directions {FL FR})
+       (to
+           if:(is Enemy (who at:(to)))
+           "CaptureToPieceAndResetCounter"
+       )
+   )
+)
+
+(define "CaptureStep_ToOrthoN"
+    (or {("CaptureStep_To" NW) ("CaptureStep_To" NE)})
+)
+
+(define "CaptureStep_ToOrthoS"
+    (or {("CaptureStep_To" SW) ("CaptureStep_To" SE)})
+)
+
+(define "CaptureToPieceAndResetCounter"
+    (effect
+        (if (is Enemy (who at:(to)))
+            (remove
+                (to)
+                (then (set Counter))
+            )
+        )
+    )
+)
+
+(define "DoubleStep_Glinski"
+    (hop
+        Forward
+        (between if:(is In (between) (sites Empty)))
+        (to if:(is In (to) (sites Empty)))
+        "EnPassant_SetLocationBackward"
+    )
+)
+
+(define "NextCannotMove"
+    (not (can Move (do
+        (forEach Piece (next))
+        ifAfterwards:(not ("IsInCheck" "King" Next))
+    )))
+)
+
+(define "SlideMaybeCapture"
+    (slide #1
+        (to
+            if:(is Enemy (who at:(to)))
+            "CaptureToPieceAndResetCounter"
+        )
+        #2
+    )
+)
+
+(define "StepToEmpty"
+    (step
+        (directions #1)
+        (to if:(is In (to) (sites Empty)))
+    )
+)
+
+//----------------------------------------
+// Castling defines (TODO: Complete)
+//----------------------------------------
+
+// Usage: ("ShafranCastle_Root" <map_piece_key> <slide_dir> <slide_span> <condition> <then>)
+(define "ShafranCastle_Root"
+    (slide
+        (from (mapEntry #1 (mover)))
+        #2
+        (between
+            (exact #3)
+            if:#4
+        )
+        #5
+    )
+)
+
+// Usage: ("ShafranCastle_Base" <king_dir> <king_spaces> <rook_type> <rook_dir> <rook_spaces>)
+(define "ShafranCastle_Base"
+    ("ShafranCastle_Root" "King" #1 #2 "King_IsNotCheckedAndToIsEmpty"
+        (then (and ("PieceMovement_SaveMoveState") ("ShafranCastle_Root" #3 #4 #5 true)))
+    )
+)
+
+(define "ShafranCastleCheck_Base"
+    (and
+        ("PieceMovement_HasPieceNeverMoved" #1)
+        (can Move ("ShafranCastle_Root" #1 #2 #3 (is In (to) (sites Empty))))
+    )
+)
+
+// TODO: Complete
+(define "ShafranCastleCheck_BishopSide_Long_P1"  ("ShafranCastleCheck_Base" "RookRight" SW 2))
+(define "ShafranCastleCheck_BishopSide_Long_P2"  ("ShafranCastleCheck_Base" "RookRight" SW 2))
+(define "ShafranCastleCheck_BishopSide_Short_P1" ("ShafranCastleCheck_Base" "RookRight" SW 2))
+(define "ShafranCastleCheck_BishopSide_Short_P2" ("ShafranCastleCheck_Base" "RookRight" SW 2))
+(define "ShafranCastleCheck_QueenSide_Long_P1"   ("ShafranCastleCheck_Base" "RookRight" SW 2))
+(define "ShafranCastleCheck_QueenSide_Long_P2"   ("ShafranCastleCheck_Base" "RookRight" SW 2))
+(define "ShafranCastleCheck_QueenSide_Short_P1"  ("ShafranCastleCheck_Base" "RookRight" SW 2))
+(define "ShafranCastleCheck_QueenSide_Short_P2"  ("ShafranCastleCheck_Base" "RookRight" SW 2))
+
+(define "ShafranCastle_BishopSide_Long_P1"  ("ShafranCastle_Base" NE 3 "RookRight" SW 2))
+(define "ShafranCastle_BishopSide_Long_P2"  ("ShafranCastle_Base" SW 3 "RookLeft" NE 2))
+(define "ShafranCastle_BishopSide_Short_P1" ("ShafranCastle_Base" NE 2 "RookRight" SW 3))
+(define "ShafranCastle_BishopSide_Short_P2" ("ShafranCastle_Base" SW 2 "RookLeft" NE 3))
+(define "ShafranCastle_QueenSide_Long_P1"   ("ShafranCastle_Base" NW 3 "RookLeft" SE 2))
+(define "ShafranCastle_QueenSide_Long_P2"   ("ShafranCastle_Base" SE 3 "RookRight" NW 2))
+(define "ShafranCastle_QueenSide_Short_P1"  ("ShafranCastle_Base" NW 2 "RookLeft" SE 3)) 
+(define "ShafranCastle_QueenSide_Short_P2"  ("ShafranCastle_Base" SE 2 "RookRight" NW 3)) 
+
+(define "King_IsNotCheckedAndToIsEmpty"         // Was: KingNotCheckedAndToEmpty
+    (and
+        (is In (to) (sites Empty))
+        (not ("IsInCheck" "King" Mover at:(to)))
+    )
+)
+
+(define "King_IsAtInitialCell"                  // Was: KingInTheInitialPlace
+    (= (what at:(mapEntry "King" (mover))) (id "King" Mover))
+)
+
+(define "PieceMovement_HasPieceNeverMoved"      // Was: HasNeverMoved
+    (= (state at:(mapEntry #1 (mover))) 1)
+)
+
+(define "PieceMovement_SaveChangeInMoveState"   // RememberPieceHasMoved
+    (then
+        (if
+            (= (state at:(last To)) 1)
+            "PieceHasMoved"
+        )
+    )
+)
+
+(define "PieceMovement_SaveMoveState"           // PieceHasMoved
+    (set State (last To) 0)
+)
+
+//----------------------------------------
+// En Passant defines
+//----------------------------------------
+
+(define "EnPassant_IsInLocation"
+    (and
+        (is Pending)
+        (= (to) (value Pending))
+    )
+)
+
+(define "EnPassant_Move"
+    (step
+        (directions Orthogonal)
+        (to if:"EnPassant_IsInLocation")
+        (then
+            (remove
+                (ahead (last To) Backward)
+            )
+        )
+    )
+)
+
+(define "EnPassant_SetLocationBackward"
+    (then
+        (set Pending (ahead (last To) Backward))
+    )
+)
+
+//------------------------------------------------------------------------------
+
+(game "Chess"
+    (players {(player N) (player S)})
+    (equipment
+        {
+        (board
+            <Board:Layout>
+            <Board-Remove:Remove-Cells>
+        )
+        <Board:Region-Colouring>
+
+        <Movement-Kings:Movement>
+        <Movement-Queens:Movement>
+        <Movement-Rooks:Movement>
+        <Movement-Bishops:Movement>
+        <Movement-Knights:Movement>
+        (piece "Pawn" Each
+            (or <Movement-Pawns:Movement>
+                (then
+                    (and
+                        (if (is In (last To) (sites Mover "Promotion"))
+                            (moveAgain)
+                        )
+                        (set Counter)
+                    )
+                )
+            )
+        )
+
+        <Castling:Setup>
+        <Placement-Player:Equipment>
+        <Promotion:Locations>
+        }
+    )
+
+    (rules
+        (start
+            {
+            (place "Pawn1" <Placement-Pawns:Pawns1>)
+            (place "Pawn2" <Placement-Pawns:Pawns2>)
+            <Placement-NonPawns:NonPawns1>
+            <Placement-NonPawns:NonPawns2>
+            <Placement-Player:Start>
+            }
+        )
+        phases:{
+        <Placement-Player:Phase-Play>
+        (phase "Movement"
+            (play
+                (if "SameTurn"
+                    (promotion (last To) <Promotion:Types> Mover)
+                    (do
+                        (or
+                            {
+                            (forEach Piece)
+                            <Castling:Play>
+                            }
+                        )
+                        ifAfterwards:(not ("IsInCheck" "King" Mover))
+                    )
+                )
+            )
+            (end
+                {
+                (if (and
+                        ("IsInCheck" "King" Next)
+                        ("NextCannotMove")
+                    )
+                    (result Mover Win)
+                )
+                (if (or
+                        (no Moves Mover)
+                        (= (counter) 100)
+                    )
+                    (result Mover Draw)
+                )
+                }
+            )
+        )
+        }
+    )
+)
+
+//------------------------------------------------------------------------------
+
+// When each hex cell is oriented vertically, Phases 0, 1, and 2 implement 3-colour uniform tiling.
+// But in the board orientation used for Gliński's Chess, it does not.
+// If a predicate were used, regions could be given by something like:
+//     (regions "RegionDark" (forEach (sites All) (= 0 (% (row + column) 3))))
+// Here we define the colouring regions of the board by specifying individual cell coords.
+(option "Board" <Board> args:{<Layout> <Region-Colouring>}
+    {
+    (item "Hexagon-6"
+        <
+            (hexagon 6 N)
+        >
+        <
+            (regions "Region-Dark"
+                (sites {"A1" "A4" "B3" "B6" "C2" "C5" "C8"
+                "D1" "D4" "D7" "E3" "E6" "E9" "F2" "F5" "F8" "F11" "G4" "G7" "G10"
+                "H3" "H6" "H9" "I5" "I8" "I11" "J7" "J10" "K6" "K9"
+                })
+            )
+            (regions "Region-Light"
+                (sites {"A3" "A6" "B2" "B5" "C1" "C4" "C7"
+                "D3" "D6" "D9" "E2" "E5" "E8" "F1" "F4" "F7" "F10" "G3" "G6" "G9"
+                "H5" "H8" "H11" "I4" "I7" "I10" "J6" "J9" "K8" "K11"
+                })
+            )
+            (regions "Region-Medium"
+                (sites {"A2" "A5" "B1" "B4" "B7" "C3" "C6"
+                "D2" "D5" "D8" "E1" "E4" "E7" "E10" "F3" "F6" "F9" "G2" "G5" "G8" "G11"
+                "H4" "H7" "H10" "I6" "I9" "J5" "J8" "J11" "K7" "K10"
+                })
+            )
+        >
+        "Hexagon-shaped board of size 6"
+    )*
+    (item "Hexagon-5"
+        <
+            (hexagon 5 N)
+        >
+        <
+            (regions "Region-Dark"
+                (sites {"A1" "A4" "B3" "B6" "C2" "C5"
+                "D1" "D4" "D7" "E3" "E6" "E9" "F2" "F5" "F8" "G4" "G7"
+                "H6" "H9" "I5" "I8"
+                })
+            )
+            (regions "Region-Light"
+                (sites {"A2" "A5" "B1" "B4" "C3" "C6"
+                "D2" "D5" "D8" "E1" "E4" "E7" "F3" "F6" "F9" "G5" "G8"
+                "H4" "H7" "I6" "I9"
+                })
+            )
+            (regions "Region-Medium"
+                (sites {"A3" "B2" "B5" "C1" "C4" "C7"
+                "D3" "D6" "E2" "E5" "E8" "F4" "F7" "G3" "G6" "G9"
+                "H5" "H8" "I7"
+                })
+            )
+        >
+        "Hexagon-shaped Board of size 5"
+    )
+    (item "Hexagon-4"
+        <
+            (hexagon 4 N)
+        >
+        <
+            (regions "Region-Dark"
+                (sites {"A2" "A5" "B1" "B4" "C3" "C6"
+                "D2" "D5" "E1" "E4" "E7" "F3" "F6" "G2" "G5"
+                })
+            )
+            (regions "Region-Light"
+                (sites {"A3" "A6" "B2" "B5" "C1" "C4"
+                "D3" "D6" "E2" "E5" "F1" "F4" "F7" "G3" "G6"
+                })
+            )
+            (regions "Region-Medium"
+                (sites {"A1" "A4" "B3" "C2" "C5"
+                "D1" "D4" "D7" "E3" "E6" "F2" "F5" "G4" "G7"
+                })
+            )
+        >
+        "Hexagon-shaped Board of size 4"
+    )
+    }
+)
+
+(option "Removed Spaces" <Board-Remove> args:{<Remove-Cells>}
+    {
+    (item "None"
+        <>
+        "No spaces removed"
+    )*
+    (item "Shafran"
+        <(remove Cell {
+            0 4 5 13 14       // "F1" "G2" "H3" "I4" "J5"
+            25 36 47 58 69 80 // "K6" "K7" "K8" "K9" "K10" "K11"
+            79 87 86 90 89    // "J11" "I11" "H11" "G11" "F11"
+            24 35 46 57 68    // "J6" "J7" "J8" "J9" "J10"
+        })>
+        "Trim the right-hand side of the board"
+    )
+    (item "Starchess"
+        <(remove Cell {
+            10 19 3 11   // "A1" "A2" "B1" "B2"
+            0 1 6 2      // "D1" "E1" "E2" "F2"
+            9 17 18 27   // "H4" "H5" "I5" "I6"
+            44 53 45 54  // "H8" "H9" "I8" "I9"
+            56 57 60 58  // "D8" "E8" "E9" "F9"
+            37 46 38 47  // "A4" "A5" "B5" "B6"
+        })>
+        "Trim the six corners"
+    )
+    }
+)
+
+(option "Castling" <Castling> args:{<Setup> <Play>}
+    {
+    (item "None"
+        <>
+        <>
+        "This chess variant does not include castling"
+    )*
+    (item "Shafran"
+        <
+            (map "King" {(pair 1 "E1") (pair 2 "E10")})
+            (map "RookLeft" {(pair 1 "A1") (pair 2 "A6")})
+            (map "RookRight" {(pair 1 "I1") (pair 2 "I9")})
+        >
+        <
+            // 2020-06-21: TODO: Complement implementation
+            (if (and {
+                     "King_IsAtInitialCell"
+                        ("PieceMovement_HasPieceNeverMoved" "King")
+                        (not ("IsInCheck" "King" Mover))
+                     }
+                )
+                (if (is Mover P1)
+                    (or
+                        {
+                        (if "ShafranCastleCheck_BishopSide_Long_P1"  "ShafranCastle_BishopSide_Long_P1")
+                        (if "ShafranCastleCheck_BishopSide_Short_P1" "ShafranCastle_BishopSide_Short_P1")
+                        (if "ShafranCastleCheck_QueenSide_Long_P1"   "ShafranCastle_QueenSide_Long_P1")
+                        (if "ShafranCastleCheck_QueenSide_Short_P1"  "ShafranCastle_QueenSide_Short_P1")
+                        }
+                    )
+                )
+                (if (is Mover P2)
+                    (or
+                        {
+                        (if "ShafranCastleCheck_BishopSide_Long_P2"  "ShafranCastle_BishopSide_Long_P2")
+                        (if "ShafranCastleCheck_BishopSide_Short_P2" "ShafranCastle_BishopSide_Short_P2")
+                        (if "ShafranCastleCheck_QueenSide_Long_P2"   "ShafranCastle_QueenSide_Long_P2")
+                        (if "ShafranCastleCheck_QueenSide_Short_P2"  "ShafranCastle_QueenSide_Short_P2")
+                        }
+                    )
+                )
+            )
+        >
+        "Shafran chess castling setup"
+    )
+    }
+)
+
+(option "Placement by Players" <Placement-Player> args:{<Equipment> <Start> <Phase-Play>}
+    {
+    (item "None"
+        <>
+        <>
+        <>
+        "This chess variant does not include a placement phase"
+    )*
+    (item "Starchess"
+        <
+            (hand Each size:5)
+            (regions "Home" P1 (sites {"C1" "D2" "E3" "F3" "G3"}))
+            (regions "Home" P2 (sites {"C7" "D7" "E7" "F8" "G9"}))
+        >
+        <
+            (place "King" "Hand" count:1)
+            (place "Queen" "Hand" count:1)
+            (place "Rook" "Hand" count:1)
+            (place "Bishop" "Hand" count:1)
+            (place "Knight" "Hand" count:1)
+        >
+        <
+            (phase "Placement"
+                (play
+                    (fromTo
+                        (from (sites Occupied by:Mover container:(mover)))
+                        (to (intersection (sites Mover "Home") (sites Empty)))
+                    )
+                )
+                (nextPhase ("HandEmpty" P2) "Movement")
+            )
+        >
+        "Initial placement of pieces before movement of pieces begins"
+    )
+    }
+)
+
+(option "Promotion" <Promotion> args:{<Locations> <Types>}
+    {
+    (item "Glinski"
+        <
+            (regions "Promotion" P1 (union (sites Side NW) (sites Side NE)))
+            (regions "Promotion" P2 (union (sites Side SW) (sites Side SE)))
+        >
+        <
+            {"Queen" "Rook" "Bishop" "Knight"}
+        >
+        "Pawn promotion setup for Glinski chess"
+    )*
+    (item "Mini Hexchess"
+        <
+            (regions "Promotion" P1 (union (sites Side NW) (sites Side NE)))
+            (regions "Promotion" P2 (union (sites Side SW) (sites Side SE)))
+        >
+        <
+            {"Rook" "Bishop" "Knight"}
+        >
+        "Pawn promotion setup for Glinski chess"
+    )*
+    (item "Starchess"
+        <
+            (regions "Promotion" P1 (sites {"C7" "D7" "E7" "F8" "G9"}))
+            (regions "Promotion" P2 (sites {"C1" "D2" "E3" "F3" "G3"}))
+        >
+        <
+            {"Queen" "Rook" "Bishop" "Knight"}
+        >
+        "Pawn promotion setup for Starchess"
+    )
+    }
+)
+
+(option "Placement of Pawns" <Placement-Pawns> args:{<Pawns1> <Pawns2>}
+    {
+    (item "Glinski"
+        <{"B1" "C2" "D3" "E4" "F5" "G5" "H5" "I5" "J5"}>
+        <{"B7" "C7" "D7" "E7" "F7" "G8" "H9" "I10" "J11"}>
+        "Glinski chess Pawns starting position (Gliński, 1936)"
+    )*
+    (item "Glinski with 3 Pawns shifted one space"
+        <{"B1" "C2" "D3" "E3" "F4" "G4" "H5" "I5" "J5"}>
+        <{"B7" "C7" "D7" "E8" "F8" "G9" "H9" "I10" "J11"}>
+        "Glinski, with the center 3 Pawns shifted one space outward (Jackson, 1975)"
+    )
+    (item "Glinski with 5 Pawns shifted one space"
+        <{"B1" "C2" "D2" "E3" "F4" "G4" "H4" "I5" "J5"}>
+        <{"B7" "C7" "D8" "E8" "F8" "G9" "H10" "I10" "J11"}>
+        "Glinski, with the center 5 Pawns shifted one space outward (Jackson, 1975)"
+    )
+    (item "McCooey"
+        <{"C1" "D2" "E3" "F4" "G4" "H4" "I4"}>
+        <{"C8" "D8" "E8" "F8" "G9" "H10" "I11"}>
+        "McCooey chess Pawn placement"
+    )
+    (item "Mini Hexchess"
+        <{"B1" "C2" "D3" "E3" "F3"}>
+        <{"B5" "C5" "D5" "E6" "F7"}>
+        "Mini Hexchess Pawn placement"
+    )
+    (item "Shafran"
+        <{"A2" "B2" "C2" "D2" "E2" "F3" "G4" "H5" "I6"}>
+        <{"A5" "B6" "C7" "D8" "E9" "F9" "G9" "H9" "I9"}>
+        "Shafran chess Pawn placement"
+    )
+    (item "Starchess"
+        <{"C2" "D3" "E4" "F4" "G4"}>
+        <{"C6" "D6" "E6" "F7" "G8"}>
+        "Starchess Pawn placement"
+    )
+    }
+)
+
+(option "Placement of Non-Pawns" <Placement-NonPawns> args:{<NonPawns1> <NonPawns2>}
+    {
+    (item "Glinski"
+        <
+            (place "King1" coord:"G2")
+            (place "Queen1" coord:"E1")
+            (place "Rook1" {"C1" "I4"})
+            (place "Bishop1" {"F1" "F2" "F3"})
+            (place "Knight1" {"D1" "H3"})
+        >
+        <
+            (place "King2" coord:"G11")
+            (place "Queen2" coord:"E10")
+            (place "Rook2" {"C8" "I11"})
+            (place "Bishop2" {"F11" "F10" "F9"})
+            (place "Knight2" {"D9" "H11"})
+        >
+        "Glinski placement of non-Pawn pieces"
+    )*
+    (item "McCooey"
+        <
+            (place "King1" coord:"G2")
+            (place "Queen1" coord:"E1")
+            (place "Rook1" {"D1" "H3"})
+            (place "Bishop1" {"F1" "F2" "F3"})
+            (place "Knight1" {"E2" "G3"})
+        >
+        <
+            (place "King2" coord:"G11")
+            (place "Queen2" coord:"E10")
+            (place "Rook2" {"D9" "H11"})
+            (place "Bishop2" {"F9" "F10" "F11"})
+            (place "Knight2" {"E9" "G10"})
+        >
+        "McCooey placement of non-Pawn pieces"
+    )
+    (item "Mini Hexchess"
+        <
+            (place "King1" coord:"D2")
+            (place "Rook1" coord:"E2")
+            (place "Bishop1" coord:"D1")
+            (place "Knight1" coord:"C1")
+        >
+        <
+            (place "King2" coord:"D6")
+            (place "Rook2" coord:"C6")
+            (place "Bishop2" coord:"D7")
+            (place "Knight2" coord:"E7")
+        >
+        "Mini Hexchess placement of non-Pawn pieces"
+    )
+    (item "Shafran"
+        <
+            (place "King1" coord:"E1")
+            (place "Queen1" coord:"D1")
+            (place "Rook1" {"A1" "I5"})
+            (place "Bishop1" {"C1" "F2" "H4"})
+            (place "Knight1" {"B1" "G3"})
+        >
+        <
+            (place "King2" coord:"E10")
+            (place "Queen2" coord:"F10")
+            (place "Rook2" {"A6" "I10"})
+            (place "Bishop2" {"B7" "D9" "G10"})
+            (place "Knight2" {"C8" "H10"})
+        >
+        "Shafran placement of non-Pawn pieces"
+    )
+    (item "Starchess"
+        <>
+        <>
+        // If Starchess did not have a placement phase, the setup would look something like this:
+        // <
+        //     (place "King1" coord:"F3") (place "Queen1" coord:"D2")
+        //     (place "Rook1" coord:"C1") (place "Bishop1" coord:"E3") (place "Knight1" coord:"G3")
+        // >
+        // <
+        //     (place "King2" coord:"D7") (place "Queen2" coord:"F8")
+        //     (place "Rook2" coord:"G9") (place "Bishop2" coord:"E7") (place "Knight2" coord:"C7")
+        // >
+        "Starchess placement of non-Pawn pieces"
+    )
+    }
+)
+
+(option "Movement of Kings" <Movement-Kings> args:{<Movement>}
+    {
+    (item "Glinski"
+        <(piece "King" Each
+            (step All
+                (to
+                    if:(or
+                        (is In (to) (sites Empty))
+                        (is Enemy (who at:(to)))
+                    )
+                    "CaptureToPieceAndResetCounter"
+                )
+            )
+        )>
+        "Glinski rules for King movement"
+    )*
+    (item "Shafran"
+        <(piece "King" Each
+            (step All
+                (to
+                    if:(or
+                        (is In (to) (sites Empty))
+                        (is Enemy (who at:(to)))
+                    )
+                    "CaptureToPieceAndResetCounter"
+                )
+                "PieceMovement_SaveChangeInMoveState"
+            )
+        )>
+        "Shafran rules for King movement, including recording movement to support castling"
+    )
+    (item "Starchess"
+        <(piece "King" Each
+            (step Ortho
+                (to
+                    if:(or
+                        (is In (to) (sites Empty))
+                        (is Enemy (who at:(to)))
+                    )
+                    "CaptureToPieceAndResetCounter"
+                )
+            )
+        )>
+        "Glinski rules for King movement"
+    )
+    }
+)
+
+(option "Movement of Queens" <Movement-Queens> args:{<Movement>}
+    {
+    (item "Glinski"
+        <(piece "Queen" Each ("SlideMaybeCapture" All ~))>
+        "Glinski rules for Queen movement"
+    )*
+    (item "Starchess"
+        <(piece "Queen" Each ("SlideMaybeCapture" Orthogonal ~))>
+        "Glinski rules for Queen movement"
+    )
+    }
+)
+
+(option "Movement of Rooks" <Movement-Rooks> args:{<Movement>}
+    {
+    (item "Glinski"
+        <(piece "Rook" Each ("SlideMaybeCapture" Orthogonal ~))>
+        "Glinski rules for Rook movement"
+    )*
+    (item "Shafran"
+        <
+            (piece "Rook" Each
+                ("SlideMaybeCapture" Orthogonal "PieceMovement_SaveChangeInMoveState")
+            )
+        >
+        "Shafran rules for Rook movement, including recording movement to support castling"
+    )
+    }
+)
+
+(option "Movement of Bishops" <Movement-Bishops> args:{<Movement>}
+    {
+    (item "Glinski"
+        <(piece "Bishop" Each ("SlideMaybeCapture" Diagonal ~))>
+        "Glinski rules for Bishop movement"
+    )*
+    }
+)
+
+(option "Movement of Knights" <Movement-Knights> args:{<Movement>}
+    {
+    (item "Glinski"
+        <(piece "Knight" Each
+            (leap
+                "KnightWalk"
+                (to
+                    if:(or (is In (to) (sites Empty)) (is Enemy (who at:(to))))
+                    "CaptureToPieceAndResetCounter"
+                )
+            )
+        )>
+        "Glinski rules for Knight movement"
+    )*
+    }
+)
+
+(option "Movement of Pawns" <Movement-Pawns> args:{<Movement>}
+    {
+    (item "Glinski"
+        <{"StepForwardToEmpty"
+            (if (is In (from) (sites Start (what at:(from)))) "DoubleStep_Glinski")
+            (if (is Mover P1) ("CaptureStep_ToOrthoN") ("CaptureStep_ToOrthoS"))
+            "EnPassant_Move"
+        }>
+        "Glinski rules for Pawn movement"
+    )*
+    (item "Shafran"
+        <{"StepForwardToEmpty"
+            (if (is In (from) (sites Start (what at:(from)))) "DoubleStep_Glinski")
+            "CaptureStep_ToDiagForward"
+            "EnPassant_Move"
+        }>
+        "Shafran rules for Pawn movement"
+    )
+    }
+)
+
+//------------------------------------------------------------------------------
+
+(rulesets {
+    (ruleset "Ruleset/Glinski"
+        {
+        "Board/Hexagon-6"
+        "Removed Spaces/None"
+        "Castling/None"
+        "Placement by Players/None"
+        "Promotion/Glinski"
+
+        "Placement of Non-Pawns/Glinski"
+        "Placement of Pawns/Glinski"
+
+        "Movement of Kings/Glinski"
+        "Movement of Queens/Glinski"
+        "Movement of Rooks/Glinski"
+        "Movement of Bishops/Glinski"
+        "Movement of Knights/Glinski"
+        "Movement of Pawns/Glinski"
+        }
+    )
+
+    (ruleset "Ruleset/Glinski with 3 Pawns shifted one space"
+        {
+        "Board/Hexagon-6"
+        "Removed Spaces/None"
+        "Castling/None"
+        "Placement by Players/None"
+        "Promotion/Glinski"
+
+        "Placement of Pawns/Glinski with 3 Pawns shifted one space"
+        "Placement of Non-Pawns/Glinski"
+
+        "Movement of Kings/Glinski"
+        "Movement of Queens/Glinski"
+        "Movement of Rooks/Glinski"
+        "Movement of Bishops/Glinski"
+        "Movement of Knights/Glinski"
+        "Movement of Pawns/Glinski"
+        }
+    )
+    (ruleset "Ruleset/Glinski with 5 Pawns shifted one space"
+        {
+        "Board/Hexagon-6"
+        "Removed Spaces/None"
+        "Castling/None"
+        "Placement by Players/None"
+        "Promotion/Glinski"
+
+        "Placement of Pawns/Glinski with 5 Pawns shifted one space"
+        "Placement of Non-Pawns/Glinski"
+
+        "Movement of Kings/Glinski"
+        "Movement of Queens/Glinski"
+        "Movement of Rooks/Glinski"
+        "Movement of Bishops/Glinski"
+        "Movement of Knights/Glinski"
+        "Movement of Pawns/Glinski"
+        }
+    )
+    (ruleset "Ruleset/McCooey"
+        {
+        "Board/Hexagon-6"
+        "Removed Spaces/None"
+        "Castling/None"
+        "Placement by Players/None"
+        "Promotion/Glinski"
+
+        "Placement of Pawns/McCooey"
+        "Placement of Non-Pawns/McCooey"
+
+        "Movement of Kings/Glinski"
+        "Movement of Queens/Glinski"
+        "Movement of Rooks/Glinski"
+        "Movement of Bishops/Glinski"
+        "Movement of Knights/Glinski"
+        "Movement of Pawns/Glinski"
+        }
+    )
+    (ruleset "Ruleset/Mini Hexchess"
+        {
+        "Board/Hexagon-4"
+        "Removed Spaces/None"
+        "Castling/None"
+        "Placement by Players/None"
+        "Promotion/Mini Hexchess"
+
+        "Placement of Pawns/Mini Hexchess"
+        "Placement of Non-Pawns/Mini Hexchess"
+
+        "Movement of Kings/Glinski"
+        "Movement of Queens/Glinski"
+        "Movement of Rooks/Glinski"
+        "Movement of Bishops/Glinski"
+        "Movement of Knights/Glinski"
+        "Movement of Pawns/Glinski"
+        }
+    )
+    (ruleset "Ruleset/Shafran"
+        {
+        "Board/Hexagon-6"
+        "Removed Spaces/Shafran"
+        "Castling/Shafran"
+        "Placement by Players/None"
+        "Promotion/Glinski"
+
+        "Placement of Pawns/Shafran"
+        "Placement of Non-Pawns/Shafran"
+
+        "Movement of Kings/Glinski"
+        "Movement of Queens/Glinski"
+        "Movement of Rooks/Glinski"
+        "Movement of Bishops/Glinski"
+        "Movement of Knights/Glinski"
+        "Movement of Pawns/Shafran"
+        }
+    )
+    (ruleset "Ruleset/Starchess"
+        {
+        "Board/Hexagon-5"
+        "Removed Spaces/Starchess"
+        "Castling/None"
+        "Placement by Players/Starchess"
+        "Promotion/Starchess"
+
+        "Placement of Pawns/Starchess"
+        "Placement of Non-Pawns/Starchess"
+
+        "Movement of Kings/Glinski"
+        "Movement of Queens/Glinski"
+        "Movement of Rooks/Glinski"
+        "Movement of Bishops/Glinski"
+        "Movement of Knights/Glinski"
+        "Movement of Pawns/Glinski"
+        }
+    )
+})
+
+//------------------------------------------------------------------------------
+
+(metadata
+(info
+{
+
+(version "0.9.3")
+(classification "board/war/chess")
+
+(description "Chess variations played on a hexagonal board")
+(origin  "The most popular hexagonal chess variant is Gliński's Chess, first invented in 1936 by Władysław Gliński.  An earlier 3-player variant, Wellisch's Chess, by Siegmund Wellisch, dates back to 1919.")
+(credit "Jay Coskey, with some content drawn from Chess.lud, by Eric Piette")
+(aliases
+    {
+    "Hexagonal Chess"
+    "Gliński's Chess"
+    "Glinski's Chess"
+
+    "Brusky's Chess"
+    "De Vasa's Chess"
+    "McCooey's Chess"
+    "Mini Hexchess"
+    "Shafran's Chess"
+    "Starchess"
+    "Wellisch's 3-person Chess"
+    }
+)
+
+(source "For an overview, see https://en.wikipedia.org/wiki/Hexagonal_chess#Gli%C5%84ski's_hexagonal_chess. For details, see The Classified Encyclopedia of Chess Variants, by D. B. Pritchard (2nd edition, completed and edited by John Beasley, 2007)"
+)
+// Also note: "Variation info: A Player's Guide to Table Games, by John Jackson (Stackpole Books, 1975)"
+
+(rules "Hexagonal Chess is Played on a chess board consisting of hexagonal spaces.")
+
+// Rules: Redirect
+(useFor "Ruleset/Glinski with 3 Pawns shifted one space" (rules "See the Glinski variant for rules"))
+(useFor "Ruleset/Glinski with 5 Pawns shifted one space" (rules "See the Glinski variant for rules"))
+
+// Rules: Origins
+(useFor "Ruleset/Glinski" (rules "Glinski Chess was invented by Władysław Gliński in 1936, and first launched in 1949."))
+(useFor "Ruleset/McCooey" (rules "McCooey Chess was invented by Dave McCooey & Richard Honeycutt in 1978-1979."))
+(useFor "Ruleset/Mini Hexchess" (rules "Mini Hexchess was invented by Dave McCooey & Richard Honeycutt in 1997."))
+(useFor "Ruleset/Shafran" (rules "Shafran Chess was invented by Isaak Grigorevich Shafran in 1939, and registered in 1956."))
+(useFor "Ruleset/Starchess" (rules "Starchess was invented by László Polgár."))
+
+// Rules: Board
+(useFor "Ruleset/Glinski" (rules "Glinski Chess is played on a hexagonal board with each side having length 6, and with each space is oriented horizontally. It has 91 spaces."))
+(useFor "Ruleset/McCooey" (rules "McCooey Chess is played on a hexagonal board with each side having length 6, and with each space is oriented horizontally. It has 91 spaces."))
+(useFor "Ruleset/Mini Hexchess" (rules "Mini Hexchess is played on a hexagonal board with each side having length 5, and with each space is oriented horizontally. It has 37 spaces."))
+(useFor "Ruleset/Shafran" (rules "Shafran Chess is played on \"narrow\" hexagonal board that can be thought of as a board of size 6 with the outermost columns removed. It has 70 spaces."))
+(useFor "Ruleset/Starchess" (rules "Starchess is played on a star-shaped hexagonal board that can be thought of as a board with each side having length 6, but with four spaces removed from each corner. It has 37 spaces."))
+
+// Rules: Piece Movement
+(useFor "Ruleset/Glinski" (rules "
+* Pawns can advance one space forward without capturing. A Pawn on a Pawn starting space can advance two spaces forward, even if it has moved to a different space than it started the game on. Pawns capture by moving to one of the two spaces 60 degrees left or right of forward. Pawns are promoted when they reach the farthest rank in a given file.
+* Rooks can slide in any of the six connected directions from their current space---forward, back, or 60 degrees off either of those.
+* Bishops can slide along the six directions West, East, or 60 degrees off due North or due South. Note that, given the 3-colour colouring of the board, each Bishop remains on the same colour that it started the game on.
+* Knights can leap to any space that is two spaces away along a connected direction (forward, back, 60 degrees off either of those), plus one more space 60 degrees off of that direction. Note that a Knight always moves to a space of a different color than the space it moved from.
+* Queens can make any move that would be available to a rook or a bishop on the current space.
+* Kings can move one space in any of the 12 directions from the current space. There is no castling in Glinski Chess.
+"))
+
+(useFor "Ruleset/McCooey" (rules "
+* Pawns can advance one space forward without capturing. A Pawn on a Pawn starting space but not in the middle column can advance two spaces forward, even if it has moved to a different space than it started the game on. Pawns capture by leaping to one of the two spaces that is forward one space from the current position, and then another space 60 degrees left or right of forward. Pawns are promoted when they reach the farthest rank in a given file.
+* Rooks can slide in any of the six connected directions from their current space---forward, back, or 60 degrees off either of those.
+* Bishops can slide along the six directions West, East, or 60 degrees off due North or due South. Note that, given the 3-colour colouring of the board, each Bishop remains on the same colour that it started the game on.
+* Knights can leap to any space that is two spaces away along a connected direction (forward, back, 60 degrees off either of those), plus one more space 60 degrees off of that direction. Note that a Knight always moves to a space of a different color than the space it moved from.
+* Queens can make any move that would be available to a rook or a bishop on the current space.
+* Kings can move one space in any of the 12 directions from the current space. There is no castling in McCooey Chess.
+"))
+
+(useFor "Ruleset/Mini Hexchess" (rules "
+* Pawns can advance one space forward without capturing. In Mini Hexchess, Pawns cannot advance multiple spaces on their initial move. Pawns capture by leaping to one of the two spaces that is forward one space from the current position, and then another space 60 degrees left or right of forward. Pawns are promoted when they reach the farthest rank in a given file. Since there are not Queens in Mini Hexchess, a Pawns can be promoted only to a Rook, Bishop, or Knight.
+* Rooks can slide in any of the six connected directions from their current space---forward, back, or 60 degrees off either of those.
+* Bishops can slide along the six directions West, East, or 60 degrees off due North or due South. Note that, given the 3-colour colouring of the board, each Bishop remains on the same colour that it started the game on.
+* Knights can leap to any space that is two spaces away along a connected direction (forward, back, 60 degrees off either of those), plus one more space 60 degrees off of that direction. Note that a Knight always moves to a space of a different color than the space it moved from.
+* There are no Queens in Mini Hexchess.
+* Kings can move one space in any of the 12 directions from the current space. There is no castling in Mini Hexchess.
+"))
+
+(useFor "Ruleset/Shafran" (rules "
+* Pawns can advance one space forward without capturing. A Pawn on a Pawn starting space can advance any number of spaces, up to the middle row of the board, even if it has moved to a different space than it started the game on. Pawns capture by leaping to one of the two spaces that is forward one space from the current position, and then another space 60 degrees left or right of forward. Pawns are promoted when they reach the farthest rank in a given file.
+* Rooks can slide in any of the six connected directions from their current space---forward, back, or 60 degrees off either of those.
+* Bishops can slide along the six directions West, East, or 60 degrees off due North or due South. Note that, given the 3-colour colouring of the board, each Bishop remains on the same colour that it started the game on.
+* Knights can leap to any space that is two spaces away along a connected direction (forward, back, 60 degrees off either of those), plus one more space 60 degrees off of that direction. Note that a Knight always moves to a space of a different color than the space it moved from.
+* Queens can make any move that would be available to a rook or a bishop on the current space.
+* Kings can move one space in any of the 12 directions from the current space. There are two types of castling in Shafran Chess. In both, all movement is along an edge of the board. In Long Castling, the King moves three spaces to the left, and the Queen-side Rook moves two to the right. In Short Castling, the King moves only two spaces to the right, and the 'Bishop-side' Rook moves three spaces to the left.
+"))
+
+(useFor "Ruleset/Starchess" (rules "
+* Pawns can advance one space forward without capturing. A Pawn on a Pawn starting space can advance two spaces forward, even if it has moved to a different space than it started the game on. Pawns capture by moving to one of the two spaces 60 degrees left or right of forward. Pawns are promoted when they reach the farthest rank in a given file.
+* Rooks can slide forward or backward only in their given column.
+* Bishops can slide in only four of the connected directions: Northwest, Northeast, Southwest, or Southeast.
+* Knights can leap to any space that is two spaces away along a connected direction (forward, back, 60 degrees off either of those), plus one more space 60 degrees off of that direction. Note that a Knight always moves to a space of a different color than the space it moved from.
+* Queens can slide in any of the six connected directions from their current space---forward, back, or 60 degrees off either of those.
+* Kings can step one space in any of the 6 connected directions from the current space. There is no castling in Starchess.
+"))
+
+// Rules: Game ending
+(rules "The game ends on a checkmate or stalemate."
+)
+
+(useFor "Ruleset/Glinski" (rules "In Glinski's Chess, the player that caused the stalemate is awarded 3/4 of a point, while the other player is awarded 1/4 of a point."
+))
+
+// Rules: Terminology
+(rules "Note that, in all forms of Hexagonal Chess, the board is usually colored with a three-colour uniform tiling---see https://en.wikipedia.org/wiki/Hexagonal_tiling. With such a coloring, a King on a given space near the center of the board can move to any of the 6 adjacent or \"orthogonally connected\" spaces, which will have a different color than the original space. The six closest spaces of the same color are sometimes called \"diagonally connected\"."
+)
+
+// Rules: Variations
+(useFor "Ruleset/Glinski" (rules "Variations: In 1975, John Jackson proposed moving the center 3 or 5 Pawns toward the edge of the board by one space.")
+)
+
+}
+)
+
+    (graphics {
+        (showCheck)
+        (pieceScale "Pawn" 0.825)
+        // (pieceFamilies {"Defined" "Microsoft" "Pragmata" "Symbola"})
+        (boardStyle ChessStyle)
+
+	// Colors darker than those on Wikipedia (#d18b47, #ffce9e, #e8ab6f)
+        (regionColour "Region-Dark"   (colour "#b5651d"))
+        (regionColour "Region-Light"  (colour "#fff8dc"))
+        (regionColour "Region-Medium" (colour "#daae7c"))
+    })
+
+    (ai
+        "Hexagonal_Chess_ai"
+    )
+)

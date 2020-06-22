@@ -1,0 +1,25 @@
+(define "Chess_ai"
+    (bestAgent "AlphaBeta")
+    (heuristics
+        {
+        (material transformation:(divNumInitPlacement) pieceWeights:
+            {
+            (pair "Pawn1" 1.0)
+            (pair "Pawn2" 1.0)
+
+            (pair "Knight1" 4.5)
+            (pair "Knight2" 4.5)
+
+            (pair "Bishop1" 4.5)
+            (pair "Bishop2" 4.5)
+
+            (pair "Rook1" 7.5)
+            (pair "Rook2" 7.5)
+
+            (pair "Queen1" 12.0)
+            (pair "Queen2" 12.0)
+            }
+        )
+        }
+    )
+)
