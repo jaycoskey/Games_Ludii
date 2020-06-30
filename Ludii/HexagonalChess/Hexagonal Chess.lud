@@ -1,35 +1,6 @@
-// Hexagonal Chess variations:: Glinski, Brusky, De Vasa, Empty Palace, McCooey, Mini Hexchess, Shafran, Starchess
-// Copyright 2020, Jay Coskey
-// Status: In progress.
-// TODO: Add Wellisch Chess (3-player)
-
-// == Ludii feedback (v0.9.3) ==
-// * Bugs:
-//   - Changing the name of the game can cause compilation to fail.
-//   - The definition of StepForwardToEmpty in section A.6.1 of the Ludii Language Reference
-//     doesn't match the implementation in rules/play/moves/StepForwardToEmpty.def.
-//   - Whitespace sensitivity. If there is a space between the function name "rulesets" and its
-//     following open brace, then the options don't appear in the Java app menu.
-// * Feature requests
-//   - A full list of relative direction enums for hexagon and rhombus board shapes.
-//   - Ability to specify orientation of Cells for rhombus boards. Currently all Cells are horizontally-oriented,
-//     while the hexagon board type supports both horizontal and vertical hexagon cells.
-//   - Optional spacing between a function argument specifier (e.g., with if: ifAfterwards: to: size: stack:)
-//     and the following argument. Currently, adding a space between them is a syntax error.
-//   - A means of unit testing would be helpful. (Setup including creation of games,
-//     and assertions about available moves and outcomes, etc.)
-//   - Option attribute "hidden", i.e., not shown in menu. For example, if one option specifies
-//     removal of board spaces, and another constrols piece starting locations, then some
-//     combinations could be incompatible. Making them available to the end-user could be confusing.
-//   - Support for option-specific rule information. Currently, the useFor function only supports per-Ruleset
-//     functions. Using the same syntax, allowing the argument of useFor to be an Option could allow 
-//     documentation to be written once per Option, rather than being repeated for each Ruleset that
-//     include that Option.
-//   - Improved compilation error messages. Currently, it seems that the following two unhelpful error
-//     messages are output upon the catching of an Exception thrown from a large code block that has
-//     many different modes of failure:
-//         Syntax error: Could not create "game" ludeme from description. 
-//         Could not expand. Check that bracket pairs '(..)' and '{..}' match.  
+// Hexagonal Chess variants:: Glinski, Brusky, De Vasa, Empty Palace, McCooey, Mini Hexchess, Shafran, Starchess
+// Copyright 2020, Jay M. Coskey
+// TODO: Add Wellisch Chess (3-player)?
 
 //----------------------------------------
 // Defines from options
@@ -313,12 +284,12 @@
 //----------------------------------------
 // Geometric defines (unused)
 //----------------------------------------
-// 
+//
 // // Usage: ("Hex_VertDiff" <from-loc> <to-loc>)
 // (define "Hex_VertDiff"
 //     (- ("OnHexN_VertPosn" #2) ("OnHexN_VertPosn" #1))
 // )
-// 
+//
 // // This measures North-South distance in the North-oriented hexagon coordinate system.
 // // The vertical distance between adjacent rows is 1, so the distance from A1 to A2 is 2.
 // // Usage: ("Hex_VertPosn" <location>)
@@ -554,7 +525,7 @@
                 69 70       81 82 83
                 55          67 68
                             54
-            }) 
+            })
         >
         "Brusky: Trim excess spaces"
     )
@@ -565,13 +536,6 @@
             })
         >
         "Remove ninth row"
-    )
-    (item "McCooey"
-        <
-            (regions "CenterColumn" P1 (sites {"F2"}))
-            (regions "CenterColumn" P2 (sites {"F9"}))
-        >
-        "McCooey: Identify those regions where Pawn double advancement is not allowed"
     )
     (item "Shafran"
         <
@@ -1138,7 +1102,7 @@
     )*
     (item "Starchess"
         <(piece "Bishop" Each
-            (or 
+            (or
                 ("SlideMove" NWandSE ~)
                 ("SlideMove" NEandSW ~)
             )
@@ -1267,12 +1231,15 @@
     )
     (item "McCooey"
         <>
-        <>
+        <
+            (regions "CenterPawnStartCell" P1 (sites {"F4"}))
+            (regions "CenterPawnStartCell" P2 (sites {"F8"}))
+        >
         <   {
             "StepForwardToEmpty"
             (if (and
                     (is In (from) (sites Start (what at:(from))))
-                    (not (is In (from) (sites Mover "CenterColumn")))
+                    (not (is In (from) (sites Mover "CenterPawnStartCell")))
                 )
                 "Step_Double"
             )
@@ -1282,7 +1249,6 @@
         >
         "McCooey rules for Pawn movement"
     )
-
     (item "Mini Hexchess"
         <>
         <>
@@ -1602,7 +1568,7 @@
 
 (description "Chess variations played on a hexagonal board")
 (origin  "The most popular hexagonal chess variant is Gliński's Chess, invented in 1936 by Władysław Gliński, though at least one ealier hexagonal variant existed: Wellisch's 3-player Chess, from 1912.")
-(credit "Jay Coskey, with some content drawn from Chess.lud, by Eric Piette")
+(credit "Jay Coskey, with some small  functions drawn from Chess.lud, by Eric Piette")
 (aliases
     {
     "Hexagonal Chess"
@@ -1623,17 +1589,16 @@
     }
 )
 
-(source "For an overview, see https://en.wikipedia.org/wiki/Hexagonal_chess#Gli%C5%84ski's_hexagonal_chess. For details, see The Classified Encyclopedia of Chess Variants, by D. B. Pritchard (2nd edition, completed and edited by John Beasley, 2007)"
+(source "For an overview, see https://en.wikipedia.org/wiki/Hexagonal_chess. For details, see The Classified Encyclopedia of Chess Variants, by D. B. Pritchard (2nd edition, completed and edited by John Beasley, 2007)."
 )
-// Also note: "Variation info: A Player's Guide to Table Games, by John Jackson (Stackpole Books, 1975)"
 
-(rules "Hexagonal Chess is Played on a chess board consisting of hexagonal spaces.")
+(rules "'Hexagonal Chess' can refer to any chess variant played on a board consisting of hexagonal spaces.")
 
 // Rules: Redirect
-(useFor "Ruleset/Glinski with 3 Pawns shifted one space" (rules "See the Glinski variant for rules"))
-(useFor "Ruleset/Glinski with 5 Pawns shifted one space" (rules "See the Glinski variant for rules"))
+(useFor "Ruleset/Glinski with 3 Pawns shifted one space" (rules "See the Glinski variant for the rules for this variant."))
+(useFor "Ruleset/Glinski with 5 Pawns shifted one space" (rules "See the Glinski variant for the rules for this variant."))
 
-(useFor "Ruleset/De Vasa with only 8 rows" (rules "See the De Vasa variant for rules"))
+(useFor "Ruleset/De Vasa with only 8 rows" (rules "See the De Vasa variant for the rules for this variant."))
 
 // Rules: Origins
 (useFor "Ruleset/Glinski" (rules "Glinski Chess was invented by Władysław Gliński in 1936, and first launched in 1949."))
@@ -1646,67 +1611,67 @@
 (useFor "Ruleset/Starchess" (rules "Starchess was invented by László Polgár."))
 
 // Rules: Board
-(useFor "Ruleset/Glinski" (rules "Glinski Chess is played on a hexagonal board with each side having length 6, and with each space is oriented horizontally. It has 91 spaces."))
-(useFor "Ruleset/Brusky" (rules "Brusky Chess is played on a hexagonal board with sides of length 4, 5, and 9, and with each space oriented vertically. It has 84 spaces."))
-(useFor "Ruleset/De Vasa" (rules "De Vasa Chess is played on a 9x9 rhombus-shaped board, and with each space is oriented vertically. It has 81 spaces."))
-(useFor "Ruleset/Empty Palace" (rules "Empty Palace Chess is played on a hexagonal board with each side having length 6, and with each space is oriented horizontally. It has 91 spaces."))
-(useFor "Ruleset/McCooey" (rules "McCooey Chess is played on a hexagonal board with each side having length 6, and with each space is oriented horizontally. It has 91 spaces."))
-(useFor "Ruleset/Mini Hexchess" (rules "Mini Hexchess is played on a hexagonal board with each side having length 5, and with each space is oriented horizontally. It has 37 spaces."))
-(useFor "Ruleset/Shafran" (rules "Shafran Chess is played on 'narrow' hexagonal board that can be thought of as a board of size 6 with the outermost columns removed. It has 70 spaces."))
-(useFor "Ruleset/Starchess" (rules "Starchess is played on a star-shaped hexagonal board that can be thought of as a board with each side having length 6, but with four spaces removed from each corner. It has 37 spaces."))
+(useFor "Ruleset/Glinski" (rules "Glinski Chess is played on a hexagonal board with each side having length 6, and each space oriented horizontally. It has 91 spaces."))
+(useFor "Ruleset/Brusky" (rules "Brusky Chess is played on a hexagonal board with sides of length 4, 5, and 9, and each space oriented vertically. It has 84 spaces."))
+(useFor "Ruleset/De Vasa" (rules "De Vasa Chess is played on a 9x9 rhombus-shaped board. It has 81 spaces."))
+(useFor "Ruleset/Empty Palace" (rules "Empty Palace Chess is played on a hexagonal board with each side having length 6, and each space oriented horizontally. It has 91 spaces."))
+(useFor "Ruleset/McCooey" (rules "McCooey Chess is played on a hexagonal board with each side having length 6, and each space oriented horizontally. It has 91 spaces."))
+(useFor "Ruleset/Mini Hexchess" (rules "Mini Hexchess is played on a hexagonal board with each side having length 5, and each space oriented horizontally. It has 37 spaces."))
+(useFor "Ruleset/Shafran" (rules "Shafran Chess is played on 'narrow' hexagonal board that can be thought of as a hexagonal board of size 6 with some outer spaces removed. It has 70 spaces."))
+(useFor "Ruleset/Starchess" (rules "Starchess is played on a star-shaped hexagonal board that can be thought of as a hexagonal board with each side having length 6, but with four spaces removed from each corner. It has 37 spaces."))
 
 // Rules: Piece Movement
 (useFor "Ruleset/Glinski" (rules "
 * Kings can move one space in any of the 12 directions from the current space. There is no castling in Glinski Chess.
+* Rooks can slide in any of the six connected directions from their current space---North, South, or 60 degrees off either of those.
+* Bishops can slide along the six directions: West, East, or 30 degrees off due North or or 30 degrees off due South. Note that, given the 3-colour colouring of the board, each Bishop remains on the same colour that it started the game on.
 * Queens can make any move that would be available to a rook or a bishop on the current space.
-* Rooks can slide in any of the six connected directions from their current space---forward, back, or 60 degrees off either of those.
-* Bishops can slide along the six directions West, East, or 60 degrees off due North or due South. Note that, given the 3-colour colouring of the board, each Bishop remains on the same colour that it started the game on.
-* Knights can leap to any space that is two spaces away along a connected direction (forward, back, 60 degrees off either of those), plus one more space 60 degrees off of that direction. Note that a Knight always moves to a space of a different colour than the space it moved from.
-* Pawns can advance one space forward without capturing. A Pawn on a Pawn starting space can advance two spaces forward, even if it has moved to a different space than it started the game on. Pawns capture by moving to one of the two spaces 60 degrees left or right of forward. Pawns are promoted when they reach the farthest rank in a given file.
+* Knights can leap to any space that is two spaces away along a connected direction (North, South, or 60 degrees off either of those), plus one more space 60 degrees off of that direction. Note that a Knight always moves to a space of a different colour than the space it moved from.
+* Pawns can advance one space forward without capturing. They capture by moving to one of the two adjacent spaces 60 degrees left or right of forward. A Pawn on a Pawn start space can advance two spaces forward without capturing, even if it has previously moved (by capturing) to a different Pawn start space than it started the game on. Pawns are promoted upon reaching the farthest rank in a given file.
 "))
 
 (useFor "Ruleset/Brusky" (rules "
 * Queens, Rooks, Bishops, and Knights move as in Glinski Chess.
 * Kings castle either kingside (moving two spaces) or queenside (moving three spaces).
-* Pawns, when moving from their start spaces, advance without capturing in either of the two spaces 60 degrees on either side of forward, unless they are blocked. A Pawn on a starting space is blocked if an enemy piece is adjacent to it in either of the forward adjacent directions. Pawns capture along a forward diagonal (i.e., to a space one row forward, with the same colour), and can also capture forwards from a Pawn start space. Pawns and promoted on the farthest row.
+* Pawns, when moving from a Pawn start space, can advance without capturing to either of the two adjacent spaces slightly left or right of forward, unless they are 'blocked'. A Pawn on a Pawn start space is 'blocked' if an enemy piece is adjacent to it in either of the forward adjacent directions. Pawns capture along a forward diagonal (i.e., to a space one row forward and off to the side, to a space connected by an edge, and having the same colour). A Pawn on a Pawn start space can also capture forwards (i.e., to the space directly ahead, with the same colour). Pawns and promoted upon reaching the farthest row.
 "))
 
 (useFor "Ruleset/De Vasa" (rules "
 * All pieces other than Kings and Pawns move as in Glinski Chess.
 * Kings can castle either kingside (moving two spaces) or queenside (moving three spaces).
-* Pawns advance to the adjacent space slightly left or right of forward. On their first move, they can move two spaces in one of those directions without capturing. They capture along a forward diagonal (i.e., to a space one row forward, with the same colour).
+* Pawns advance without capturing to the adjacent space slightly left or right of forward. On their first move, they can move two spaces in either of these directions without capturing. They capture 'diagonally forward' (i.e., to a space ahead connected by an edge, and having the same colour). Pawns are promoted upon reaching the farthest row.
 "))
 
 (useFor "Ruleset/Empty Palace" (rules "
 * All pieces other than Kings move as in Glinski Chess.
-* Kings can castle to the left or right, moving two spaces in either case.
+* Kings can castle to the left or right, moving two spaces in either case. The Rook moves two spaces in the opposite direction.
 "))
 
 (useFor "Ruleset/McCooey" (rules "
 * All pieces other than Pawns move as in Glinski Chess.
-* Pawns can advance one space forward without capturing. A Pawn on a Pawn starting space but not in the middle column can advance two spaces forward, even if it has moved to a different space than it started the game on. Pawns capture by leaping to one of the two spaces that is forward one space from the current position, and then another space 60 degrees left or right of forward. Pawns are promoted when they reach the farthest rank in a given file.
+* Pawns can advance one space forward without capturing. A Pawn on a Pawn start space but not in the middle column can advance two spaces forward without capturing. Pawns capture 'diagonally forward' (i.e., to a space ahead connected by an edge, and having the same colour). Pawns are promoted upon reaching the farthest rank in a given file.
 "))
 
 (useFor "Ruleset/Mini Hexchess" (rules "
-* Rooks, Bishops, Knights, and Kings move as in Glinski Chess.
+* Kings, Rooks, Bishops, and Knights move as in Glinski Chess.
 * There are no Queens in Mini Hexchess.
-* Pawns can advance one space forward without capturing. In Mini Hexchess, Pawns cannot advance multiple spaces on their initial move. Pawns capture by leaping to one of the two spaces that is forward one space from the current position, and then another space 60 degrees left or right of forward. Pawns are promoted when they reach the farthest rank in a given file. Since there are not Queens in Mini Hexchess, a Pawns can be promoted only to a Rook, Bishop, or Knight.
+* Pawns can advance one space forward without capturing. Pawns cannot advance multiple spaces on their initial move. Pawns capture 'diagonally forward' (i.e., to a space ahead connected by an edge, and having the same colour). Pawns are promoted when they reach the farthest rank in a given file. Pawns are promoted upon reaching the farthest rank in a given file. Since there are no Queens in Mini Hexchess, Pawns can be promoted only to a Rook, Bishop, or Knight.
 "))
 
 (useFor "Ruleset/Shafran" (rules "
 * Queens, Rooks, Bishops, and Knights move as in Glinski Chess.
 * Kings move as in Glinski Chess, but can also castle. In Long Castling, the King moves three spaces toward its queenside Rook and the Rook moves two spaces in the opposite direction. In Short Castling, the King moves two spaces toward its bishopside Rook, and the Rook moves three spaces.
-* Pawns can advance one space forward without capturing. A Pawn on a Pawn starting space can advance any number of spaces, up to the middle row of the board, even if it has moved to a different space than it started the game on. Pawns capture by leaping to one of the two spaces that is forward one space from the current position, and then another space 60 degrees left or right of forward. Pawns are promoted when they reach the farthest rank in a given file.
+* Pawns can advance one space forward without capturing. A Pawn on a Pawn start space can advance any number of spaces, up to the middle row of the board. Thus the outermost Pawns on their first moves can only advance one space, while the Pawns in the three center columns can advance up to three spaces. Pawns capture 'diagonally forward' (i.e., to a space ahead connected by an edge, and having the same colour). Pawns are promoted upon reaching the farthest rank in a given file.
 "))
 
 (useFor "Ruleset/Starchess" (rules "
-* Starchess starts off with the placement of the non-Pawn pieces being their Pawns. Each player in turn selects another piece to place behind their pawns. This continues until all the pieces have been placed, and make regular chess moves from then on.
+* Starchess starts off with the non-Pawn pieces being placed behind the Pawns. This happens one piece at a time, in alternating turns, until all non-Pawn pieces have been placed. Then the movement phase of the game begins as usual.
 * Knights move as in Glinsky Chess.
-* Queens can slide in any of the six connected directions from their current space---forward, back, or 60 degrees off either of those.
+* Queens can slide in any of the six connected directions from their current space---North, South, or 60 degrees off either of those.
 * Kings can move one space in any of those same six directions.
 * Rooks can slide forward or backward only in their given column.
 * Bishops can slide in only four of the connected directions: Northwest, Northeast, Southwest, or Southeast.
-* Pawns can advance one space forward without capturing. A Pawn on a Pawn starting space can advance two spaces forward, even if it has moved to a different space than it started the game on. Pawns capture by moving to one of the two spaces 60 degrees left or right of forward. Pawns are promoted when they reach the farthest rank in a given file. A Pawn in one of the spaces at the extremes of the middle row is called a 'mummy', while a Pawn in one of the spaces adjacent to that is called a 'dead Pawn'.
+* Pawns can advance one space forward without capturing. A Pawn on a Pawn start space can advance two spaces forward, even if it has previously moved (by capturing) to a different Pawn start space than it started the game on. Pawns capture by moving to one of the two adjacent spaces 60 degrees left or right of forward. Pawns are promoted upon reaching the farthest rank in a given file. Some terminology: a Pawn off to the side, in one of the two spaces at the extremes of the middle row is called a 'mummy', while a Pawn in one of the spaces adjacent to that is called a 'dead Pawn'. Mummies and dead Pawns are blocked from being promoted until they can retrun to one of the five central columns.
 "))
 
 // Rules: Game ending
@@ -1722,8 +1687,8 @@ Note that, in all forms of Hexagonal Chess, the board is usually coloured with a
 "))
 
 // Rules: Variations
-(useFor "Ruleset/Glinski" (rules "Variations: In 1975, John Jackson proposed moving the center 3 or 5 Pawns toward the edge of the board by one space.")
-)
+(useFor "Ruleset/Glinski" (rules "Variations: Move the center 3 or 5 Pawns toward the edge of the board by one space, as proposed in A Player's Guide to Table Games, by John Jackson, Stackpole Books, 1975.
+"))
 
 }
 )
@@ -1736,7 +1701,6 @@ Note that, in all forms of Hexagonal Chess, the board is usually coloured with a
         <Graphics:Colouring>
     })
 
-    (ai
-        "Hexagonal Chess_ai"
-    )
+    (ai "Chess_ai")
+    // (ai "Hexagonal Chess_ai")
 )
