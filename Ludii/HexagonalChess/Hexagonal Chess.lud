@@ -1,6 +1,8 @@
-// Hexagonal Chess variants:: Glinski, Brusky, De Vasa, Empty Palace, McCooey, Mini Hexchess, Shafran, Starchess
+// Hexagonal Chess
 // Copyright 2020, Jay M. Coskey
-// TODO: Add Wellisch Chess (3-player)?
+// Supported variants:: Glinski, Brusky, De Vasa, Empty Palace, McCooey, Mini Hexchess, Shafran, Starchess
+// BUG: In Shafran Chess, En passant not working after 3-space initial Pawn move. (See "BUG", below.)
+// TODO: Wellisch Chess
 
 //----------------------------------------
 // Defines from options
@@ -14,37 +16,24 @@
 // General defines
 //----------------------------------------
 
-// Usage: ("Step_To" <direction>)
-(define "Step_To"
-    (step #1
-        (to if:(is Enemy (who at:(to)))
-            (effect (remove (to)))
-        )
-    )
-)
-
-// Usage: ("Step_ToEmpty" <direction>)
-(define "Step_ToEmpty"
-    (step #1
-        (to if:(is In (to) (sites Empty)))
-    )
-)
-
 // Source: Chess.lud - CaptureToPieceAndResetCounter
 (define "CaptureToPieceAndResetCounter"
     (effect
         (if (is Enemy (who at:(to)))
-            (remove
-                (to)
+            (remove (to)
                 (then (set Counter))
             )
         )
     )
 )
 
+(define "IsToEmpty"
+    (is In (to) (sites Empty))
+)
+
 (define "IsToEmptyOrEnemy"
     (or
-        (is In (to) (sites Empty))
+        "IsToEmpty"
         (is Enemy (who at:(to)))
     )
 )
@@ -62,6 +51,11 @@
     (if (is Mover P1) #1 #2)
 )
 
+// Usage: ("PromoteTo" <piece_types>)
+(define "PromoteTo"
+    (promotion (last To) #1 Mover)
+)
+
 // Usage: ("SlideMove" <direction> <then>)
 (define "SlideMove"
     (slide #1
@@ -76,13 +70,13 @@
 // Kings: Non-castling defines
 //----------------------------------------
 
-// Usage: ("SlideMove" <then>)
+// Usage: ("KingStep" <direction> <then>)
 (define "KingStep"
-    (step All
+    (step #1
         (to if:"IsToEmptyOrEnemy"
             "CaptureToPieceAndResetCounter"
         )
-        #1
+        #2
     )
 )
 
@@ -130,7 +124,7 @@
 (define "Castle"
     (if (and
             ("History_HasNeverMoved" #3)
-            (can Move ("Castle_Base" #3 #4 #5 (is In (to) (sites Empty))))
+            (can Move ("Castle_Base" #3 #4 #5 "IsToEmpty"))
         )
         ("Castle_KingRook" #1 #2 #3 #4 #5)
     )
@@ -154,8 +148,7 @@
 // Source: Chess.lud - RememberPieceHasMoved
 (define "History_SaveMovementChange"
     (then
-        (if
-            (= (state at:(last To)) 1)
+        (if (= (state at:(last To)) 1)
             "History_SaveMovement"
         )
     )
@@ -173,43 +166,52 @@
 // Source: Chess.lud - KingNotCheckedAndToEmpty
 (define "King_IsToEmptyAndNotInCheck"
     (and
-        (is In (to) (sites Empty))
+        "IsToEmpty"
         (not ("IsInCheck" "King" Mover at:(to)))
     )
 )
 
 //--------------------
 // Pawns: Single step (non-capturing)
+// Note: Do not reset the Counter---that's done elsewhere.
 //--------------------
 
+// Usage: ("PawnStep_ToEmpty" <direction>)
+(define "PawnStep_ToEmpty"
+    (step #1
+        (to if:"IsToEmpty")
+    )
+)
+
 // Source: Chess.lud - CaptureForwardDiagonal
-(define "Step_ToForwardDiag"
+(define "PawnStep_ForwardDiag"
     (step (directions {FL FR})
         (to if:(is Enemy (who at:(to)))
-            "CaptureToPieceAndResetCounter"
+            (effect (remove (to)))
         )
     )
 )
 
-// Usage: ("Fork_StepToEmpty_Base" <left_P1> <right_P1> <left_P2> <right_P2>)
-(define "ForkStep_ToEmpty_Base"
+// Usage: ("PawnFork_ToEmpty_Base" <left_P1> <right_P1> <left_P2> <right_P2>)
+(define "PawnFork_ToEmpty_Base"
     ("P12"
-        (or ("Step_ToEmpty" #1) ("Step_ToEmpty" #2))
-        (or ("Step_ToEmpty" #3) ("Step_ToEmpty" #4))
+        (or ("PawnStep_ToEmpty" #1) ("PawnStep_ToEmpty" #2))
+        (or ("PawnStep_ToEmpty" #3) ("PawnStep_ToEmpty" #4))
     )
 )
 
 //--------------------
 // Pawns: Double step (non-capturing)
+// Note: Do not reset the Counter---that's done elsewhere.
 //--------------------
 
 // Source: Derived from Chess.lud - DoubleStep
-// Usage: ("Step_Double_Base" <fwd_dir> <back_dir>)
-(define "Step_Double_Base"
+// Usage: ("PawnStep_Double_Base" <fwd_dir> <back_dir>)
+(define "PawnStep_Double_Base"
     (hop
         #1
         (between if:(is In (between) (sites Empty)))
-        (to if:(is In (to) (sites Empty)))
+        (to if:"IsToEmpty")
         (then (and
             {
             (set Pending (ahead (last To) #2))
@@ -219,29 +221,39 @@
     )
 )
 
-(define "Step_Double"
-    ("Step_Double_Base" Forward Backward)
+(define "PawnStep_Double"
+    ("PawnStep_Double_Base" Forward Backward)
 )
 
-// Usage: ("Step_Double_Base" <LF1> <LB1> <RF1> <RB1> <LF2> <LB2> <RF2> <RB2>)
+// Usage: ("PawnStep_Double_Base" <LF1> <LB1> <RF1> <RB1> <LF2> <LB2> <RF2> <RB2>)
 // Note: Brusky chess also has multiple possible directions for Pawn double advancement
 //       (a forking double-step), but its blocking rule requires a different treatment.
-(define "ForkStep_Double_Base"
+(define "PawnFork_Double_Base"
     ("P12"
-        (or ("Step_Double_Base" #1 #2) ("Step_Double_Base" #3 #4))
-        (or ("Step_Double_Base" #5 #6) ("Step_Double_Base" #7 #8))
+        (or ("PawnStep_Double_Base" #1 #2) ("PawnStep_Double_Base" #3 #4))
+        (or ("PawnStep_Double_Base" #5 #6) ("PawnStep_Double_Base" #7 #8))
     )
 )
 
 //--------------------
 // Pawns: Simple capture
+// Note: Do not reset the Counter---that's done elsewhere.
 //--------------------
 
-// Usage: ("ForkStep_Base" <left_dir_P1> <right_dir_P1> <left_dir_P2> <right_dir_P2>)
-(define "ForkStep_Base"
+// Usage: ("PawnStep_To" <direction>)
+(define "PawnStep_To"
+    (step #1
+        (to if:(is Enemy (who at:(to)))
+            (effect (remove (to)))
+        )
+    )
+)
+
+// Usage: ("PawnFork_Base" <left_dir_P1> <right_dir_P1> <left_dir_P2> <right_dir_P2>)
+(define "PawnFork_Base"
     ("P12"
-        (or ("Step_To" #1) ("Step_To" #2))
-        (or ("Step_To" #3) ("Step_To" #4))
+        (or ("PawnStep_To" #1) ("PawnStep_To" #2))
+        (or ("PawnStep_To" #3) ("PawnStep_To" #4))
     )
 )
 
@@ -249,6 +261,7 @@
 // Pawns: En passant
 //   - Save skipped-over spaces in Pending
 //   - Save location of last-moved Pawn in Var.
+// Note: Do not reset the Counter---that's done elsewhere.
 //--------------------
 
 (define "IsEnPassantCapture"
@@ -258,49 +271,31 @@
     )
 )
 
-(define "EnPassant_Diag"
-    ("EnPassant_Base" {FL FR})
-)
-
 // Usage: ("EnPassant_Base" <direction>)
 (define "EnPassant_Base"
     (step
         (directions #1)
         (to if:"IsEnPassantCapture")
-        (then
-            (remove (var))
-        )
+        (then (remove (var)))
     )
 )
 
-// Usage: ("Fork_EnPassant_Base" <left_P1> <right_P1> <left_P2> <right_P2>)
-(define "ForkEnPassant_Base"
+(define "EnPassant_Diag"
+    ("EnPassant_Base" {FL FR})
+)
+
+// Usage: ("EnPassantFork_Base" <left_P1> <right_P1> <left_P2> <right_P2>)
+(define "EnPassantFork_Base"
     ("P12"
         (or ("EnPassant_Base" #1) ("EnPassant_Base" #2))
         (or ("EnPassant_Base" #3) ("EnPassant_Base" #4))
     )
 )
 
-//----------------------------------------
-// Geometric defines (unused)
-//----------------------------------------
-//
-// // Usage: ("Hex_VertDiff" <from-loc> <to-loc>)
-// (define "Hex_VertDiff"
-//     (- ("OnHexN_VertPosn" #2) ("OnHexN_VertPosn" #1))
-// )
-//
-// // This measures North-South distance in the North-oriented hexagon coordinate system.
-// // The vertical distance between adjacent rows is 1, so the distance from A1 to A2 is 2.
-// // Usage: ("Hex_VertPosn" <location>)
-// (define "Hex_VertPosn"
-//     (- (* 2 (row of:#1)) (column of:#1))
-// )
-
 //------------------------------------------------------------------------------
 
 (game "Chess"
-    (players <Board:Players>)
+    (players <Players:Players>)
     (equipment
         {
         (board
@@ -338,10 +333,8 @@
     (rules
         (start
             {
-            (place "Pawn1" <Placement-Pawns:Pawns1>)
-            (place "Pawn2" <Placement-Pawns:Pawns2>)
-            <Placement-NonPawns:NonPawns1>
-            <Placement-NonPawns:NonPawns2>
+            <Placement-Pawns:Pawns>
+            <Placement-NonPawns:NonPawns>
             <Placement-Player:Start>
             }
         )
@@ -350,7 +343,7 @@
         (phase "Movement"
             (play
                 (if ("SameTurn")
-                    (promotion (last To) <Promotion:Types> Mover)
+                    <Promotion:Promotion>
                     (do (forEach Piece)
                         ifAfterwards:(not ("IsInCheck" "King" Mover))
                     )
@@ -379,15 +372,27 @@
 
 //------------------------------------------------------------------------------
 
+(option "Players" <Players> args:{<Players>}
+    {
+    (item "Players-2-N-S"
+        < {(player N) (player S)} >
+        "Two players, with Forward directions N and S"
+    )*
+    (item "Players-2-NNE-SSW"
+        < {(player NNE) (player SSW)} >
+        "Two players, with Forward directions NNE and SSW"
+    )
+    }
+)
+
 // When each hex cell is oriented vertically, Phases 0, 1, and 2 implement 3-colour uniform tiling.
 // But in the board orientation used for Gliński's Chess, it does not.
 // If a predicate were used, regions could be given by something like:
 //     (regions "RegionDark" (forEach (sites All) (= 0 (% (row + column) 3))))
 // Here we define the colouring regions of the board by specifying individual cell coords.
-(option "Board" <Board> args:{<Players> <Layout> <Region-Colouring> <Defines>}
+(option "Board" <Board> args:{<Layout> <Region-Colouring> <Defines>}
     {
-    (item "Hexagon-6"
-        < {(player N) (player S)} >
+    (item "Hexagon-6N"
         < (hexagon 6 N) >
         <
             (regions "Region-Dark"
@@ -412,8 +417,7 @@
         <>
         "Hexagon-shaped board of size 6"
     )*
-    (item "Hexagon-5"
-        < {(player N) (player S)} >
+    (item "Hexagon-5N"
         < (hexagon 5 N) >
         <
             (regions "Region-Dark"
@@ -438,8 +442,7 @@
         <>
         "Hexagon-shaped Board of size 5"
     )
-    (item "Hexagon-4"
-        < {(player N) (player S)} >
+    (item "Hexagon-4N"
         < (hexagon 4 N) >
         <
             (regions "Region-Dark"
@@ -462,14 +465,12 @@
         "Hexagon-shaped Board of size 4"
     )
     (item "Hexagon-9"
-        < {(player N) (player S)} >
         < (hexagon 9) >
         <>
         <>
-        "Hexagon-shaped board of size 10"
+        "Hexagon-shaped board of size 9"
     )
     (item "Rhombus-9"
-        < {(player NNE) (player SSW)} >
         < (rhombus 9) >
         <
             (regions "Region-Dark"
@@ -596,19 +597,13 @@
     )*
     (item "Brusky"
         <
-            (define "Castle_KingSide_P1"  ("Castle" E 2 "RookRight" W 2))
-            (define "Castle_QueenSide_P1" ("Castle" W 3 "RookLeft"  E 3))
-
-            (define "Castle_KingSide_P2"  ("Castle" W 2 "RookLeft"  E 2))
-            (define "Castle_QueenSide_P2" ("Castle" E 3 "RookRight" W 3))
-
-            (define "Castle_KingSide"  ("P12" "Castle_KingSide_P1"  "Castle_KingSide_P2"))
-            (define "Castle_QueenSide" ("P12" "Castle_QueenSide_P1" "Castle_QueenSide_P2"))
+            (define "Castle_KingSide"  ("Castle" E 2 "RookRight" W 2))
+            (define "Castle_QueenSide" ("Castle" W 3 "RookLeft"  E 3))
         >
         <
             (map "King"      {(pair 1 "N6") (pair 2 "J9")})
-            (map "RookLeft"  {(pair 1 "I1") (pair 2 "Q9")})
-            (map "RookRight" {(pair 1 "E4") (pair 2 "M12")})
+            (map "RookLeft"  {(pair 1 "I1") (pair 2 "E4")})
+            (map "RookRight" {(pair 1 "Q9") (pair 2 "M12")})
         >
         "Brusky chess castling setup"
     )
@@ -712,7 +707,7 @@
     }
 )
 
-(option "Promotion" <Promotion> args:{<Locations> <Types>}
+(option "Promotion" <Promotion> args:{<Locations> <Promotion>}
     {
     (item "Glinski"
         <
@@ -720,7 +715,7 @@
             (regions "Promotion" P2 (union (sites Side SW) (sites Side SE)))
         >
         <
-            {"Queen" "Rook" "Bishop" "Knight"}
+            ("PromoteTo" {"Queen" "Rook" "Bishop" "Knight"})
         >
         "Glinski chess Pawn promotion details"
     )*
@@ -730,7 +725,7 @@
             (regions "Promotion" P2 (sites Bottom))
         >
         <
-            {"Queen" "Rook" "Bishop" "Knight"}
+            ("PromoteTo" {"Queen" "Rook" "Bishop" "Knight"})
         >
         "Brusky chess Pawn promotion details"
     )
@@ -740,7 +735,7 @@
             (regions "Promotion" P2 (sites Side SW))
         >
         <
-            {"Queen" "Rook" "Bishop" "Knight"}
+            ("PromoteTo" {"Queen" "Rook" "Bishop" "Knight"})
         >
         "De Vasa chess Pawn promotion details"
     )
@@ -750,7 +745,7 @@
             (regions "Promotion" P2 (union (sites Side SW) (sites Side SE)))
         >
         <
-            {"Rook" "Bishop" "Knight"}
+            ("PromoteTo" {"Rook" "Bishop" "Knight"})
         >
         "Mini Hexchess Pawn promotion details"
     )
@@ -760,69 +755,89 @@
             (regions "Promotion" P2 (sites {"C1" "D2" "E3" "F3" "G3"}))
         >
         <
-            {"Queen" "Rook" "Bishop" "Knight"}
+            ("PromoteTo" {"Queen" "Rook" "Bishop" "Knight"})
         >
         "Starchess Pawn promotion details"
     )
     }
 )
 
-(option "Placement of Pawns" <Placement-Pawns> args:{<Pawns1> <Pawns2>}
+(option "Placement of Pawns" <Placement-Pawns> args:{<Pawns>}
     {
     (item "Glinski"
-        <{"B1" "C2" "D3" "E4" "F5" "G5" "H5" "I5" "J5"}>
-        <{"B7" "C7" "D7" "E7" "F7" "G8" "H9" "I10" "J11"}>
+        <
+            (place "Pawn1" {"B1" "C2" "D3" "E4" "F5" "G5" "H5" "I5" "J5"})
+            (place "Pawn2" {"B7" "C7" "D7" "E7" "F7" "G8" "H9" "I10" "J11"})
+        >
         "Glinski chess Pawns starting position (Gliński, 1936)"
     )*
     (item "Glinski with 3 Pawns shifted one space"
-        <{"B1" "C2" "D3" "E3" "F4" "G4" "H5" "I5" "J5"}>
-        <{"B7" "C7" "D7" "E8" "F8" "G9" "H9" "I10" "J11"}>
-        "Glinski, with the center 3 Pawns shifted one space outward (Jackson, 1975)"
+        <
+            (place "Pawn1" {"B1" "C2" "D3" "E3" "F4" "G4" "H5" "I5" "J5"})
+            (place "Pawn2" {"B7" "C7" "D7" "E8" "F8" "G9" "H9" "I10" "J11"})
+        >
+        "Glinski, with the center 3 Pawns shifted one space outward"
     )
     (item "Glinski with 5 Pawns shifted one space"
-        <{"B1" "C2" "D2" "E3" "F4" "G4" "H4" "I5" "J5"}>
-        <{"B7" "C7" "D8" "E8" "F8" "G9" "H10" "I10" "J11"}>
-        "Glinski, with the center 5 Pawns shifted one space outward (Jackson, 1975)"
+        <
+            (place "Pawn1" {"B1" "C2" "D2" "E3" "F4" "G4" "H4" "I5" "J5"})
+            (place "Pawn2" {"B7" "C7" "D8" "E8" "F8" "G9" "H10" "I10" "J11"})
+        >
+        "Glinski, with the center 5 Pawns shifted one space outward"
     )
     (item "Brusky"
-        <{"H1" "I2" "J3" "K4" "L5" "M6" "N7" "O8" "P9" "Q10"}>
-        <{"E3" "F4" "G5" "H6" "I7" "J8" "K9" "L10" "M11" "N12"}>
+        <
+            (place "Pawn1" {"H1" "I2" "J3" "K4" "L5" "M6" "N7" "O8" "P9" "Q10"})
+            (place "Pawn2" {"E3" "F4" "G5" "H6" "I7" "J8" "K9" "L10" "M11" "N12"})
+        >
         "Brusky chess Pawns placement"
     )
     (item "De Vasa"
-        <{"A3" "B3" "C3" "D3" "E3" "F3" "G3" "H3" "I3"}>
-        <{"A7" "B7" "C7" "D7" "E7" "F7" "G7" "H7" "I7"}>
+        <
+            (place "Pawn1" {"A3" "B3" "C3" "D3" "E3" "F3" "G3" "H3" "I3"})
+            (place "Pawn2" {"A7" "B7" "C7" "D7" "E7" "F7" "G7" "H7" "I7"})
+        >
         "De Vasa chess places Pawns on rows 3 and 7"
     )
     (item "De Vasa with only 8 rows"
-        <{"A2" "B2" "C2" "D2" "E2" "F2" "G2" "H2" "I2"}>
-        <{"A7" "B7" "C7" "D7" "E7" "F7" "G7" "H7" "I7"}>
+        <
+            (place "Pawn1" {"A2" "B2" "C2" "D2" "E2" "F2" "G2" "H2" "I2"})
+            (place "Pawn2" {"A7" "B7" "C7" "D7" "E7" "F7" "G7" "H7" "I7"})
+        >
         "De Vasa chess places Pawns on rows 2 and 7"
     )
     (item "McCooey"
-        <{"C1" "D2" "E3" "F4" "G4" "H4" "I4"}>
-        <{"C8" "D8" "E8" "F8" "G9" "H10" "I11"}>
+        <
+            (place "Pawn1" {"C1" "D2" "E3" "F4" "G4" "H4" "I4"})
+            (place "Pawn2" {"C8" "D8" "E8" "F8" "G9" "H10" "I11"})
+        >
         "McCooey chess Pawn placement"
     )
     (item "Mini Hexchess"
-        <{"B1" "C2" "D3" "E3" "F3"}>
-        <{"B5" "C5" "D5" "E6" "F7"}>
+        <
+            (place "Pawn1" {"B1" "C2" "D3" "E3" "F3"})
+            (place "Pawn2" {"B5" "C5" "D5" "E6" "F7"})
+        >
         "Mini Hexchess Pawn placement"
     )
     (item "Shafran"
-        <{"A2" "B2" "C2" "D2" "E2" "F3" "G4" "H5" "I6"}>
-        <{"A5" "B6" "C7" "D8" "E9" "F9" "G9" "H9" "I9"}>
+        <
+            (place "Pawn1" {"A2" "B2" "C2" "D2" "E2" "F3" "G4" "H5" "I6"})
+            (place "Pawn2" {"A5" "B6" "C7" "D8" "E9" "F9" "G9" "H9" "I9"})
+        >
         "Shafran chess Pawn placement"
     )
     (item "Starchess"
-        <{"C2" "D3" "E4" "F4" "G4"}>
-        <{"C6" "D6" "E6" "F7" "G8"}>
+        <
+            (place "Pawn1" {"C2" "D3" "E4" "F4" "G4"})
+            (place "Pawn2" {"C6" "D6" "E6" "F7" "G8"})
+        >
         "Starchess Pawn placement"
     )
     }
 )
 
-(option "Placement of Non-Pawns" <Placement-NonPawns> args:{<NonPawns1> <NonPawns2>}
+(option "Placement of Non-Pawns" <Placement-NonPawns> args:{<NonPawns>}
     {
     (item "Glinski"
         <
@@ -831,8 +846,7 @@
             (place "Rook1" {"C1" "I4"})
             (place "Bishop1" {"F1" "F2" "F3"})
             (place "Knight1" {"D1" "H3"})
-        >
-        <
+
             (place "King2" coord:"G11")
             (place "Queen2" coord:"E10")
             (place "Rook2" {"C8" "I11"})
@@ -848,8 +862,7 @@
             (place "Rook1" {"I1" "Q9"} state:1)
             (place "Bishop1" {"K3" "M5" "O7"})
             (place "Knight1" {"J2" "P8"})
-        >
-        <
+
             (place "King2" coord:"J9" state:1)
             (place "Queen2" coord:"H7")
             (place "Rook2" {"E4" "M12"} state:1)
@@ -865,8 +878,7 @@
             (place "Rook1" {"A1" "I1"} state:1)
             (place "Bishop1" {"C1" "E1" "G1"})
             (place "Knight1" {"B1" "H1"})
-        >
-        <
+
             (place "King2" coord:"F9" state:1)
             (place "Queen2" coord:"D9")
             (place "Rook2" {"A9" "I9"} state:1)
@@ -882,8 +894,7 @@
             (place "Rook1" {"A1" "I1"} state:1)
             (place "Bishop1" {"C1" "E1" "G1"})
             (place "Knight1" {"B1" "H1"})
-        >
-        <
+
             (place "King2" coord:"F8" state:1)
             (place "Queen2" coord:"D8")
             (place "Rook2" {"A8" "I8"} state:1)
@@ -899,8 +910,7 @@
               (place "Rook1" {"C1" "I4"} state:1)
               (place "Bishop1" {"F2" "F3" "G3"})
               (place "Knight1" {"D2" "H4"})
-        >
-        <
+
               (place "King2" coord:"F11" state:1)
               (place "Queen2" coord:"E9")
               (place "Rook2" {"C8" "I11"} state:1)
@@ -916,8 +926,7 @@
             (place "Rook1" {"D1" "H3"})
             (place "Bishop1" {"F1" "F2" "F3"})
             (place "Knight1" {"E2" "G3"})
-        >
-        <
+
             (place "King2" coord:"G11")
             (place "Queen2" coord:"E10")
             (place "Rook2" {"D9" "H11"})
@@ -932,8 +941,7 @@
             (place "Rook1" coord:"E2")
             (place "Bishop1" coord:"D1")
             (place "Knight1" coord:"C1")
-        >
-        <
+
             (place "King2" coord:"D6")
             (place "Rook2" coord:"C6")
             (place "Bishop2" coord:"D7")
@@ -948,8 +956,7 @@
             (place "Rook1" {"A1" "I5"} state:1)
             (place "Bishop1" {"C1" "F2" "H4"})
             (place "Knight1" {"B1" "G3"})
-        >
-        <
+
             (place "King2" coord:"E10" state:1)
             (place "Queen2" coord:"F10")
             (place "Rook2" {"A6" "I10"} state:1)
@@ -959,8 +966,6 @@
         "Shafran placement of non-Pawn pieces"
     )
     (item "Starchess"
-        <>
-        <>
         // If Starchess had fixed non-Pawn piece locations, the setup might look something like this:
         // <
         //     (place "King1" coord:"F3") (place "Queen1" coord:"D2")
@@ -970,6 +975,7 @@
         //     (place "King2" coord:"D7") (place "Queen2" coord:"F8")
         //     (place "Rook2" coord:"G9") (place "Bishop2" coord:"E7") (place "Knight2" coord:"C7")
         // >
+        <>
         "Starchess placement of non-Pawn pieces"
     )
     }
@@ -979,14 +985,14 @@
     {
     (item "Glinski"
         <(piece "King" Each
-            ("KingStep" "History_SaveMovementChange")  // TODO: Remove History function
+            ("KingStep" All ~)
         )>
         "Glinski chess rules for King movement"
     )*
-    (item "Brusky"
+    (item "With history tracking"
         <(piece "King" Each
             (or {
-                ("KingStep" "History_SaveMovementChange")
+                ("KingStep" All "History_SaveMovementChange")
                 (if "Castle_PreCheck"
                     (or {
                         "Castle_KingSide"
@@ -999,26 +1005,10 @@
         )>
         "Brusky chess rules for King movement, including castling"
     )
-    (item "De Vasa"
-        <(piece "King" Each
-            (or {
-                ("KingStep" "History_SaveMovementChange")
-                (if "Castle_PreCheck"
-                    (or {
-                        "Castle_KingSide"
-                        "Castle_QueenSide"
-                        }
-                    )
-                )
-                }
-            )
-        )>
-        "De Vasa chess rules for King movement, including castling"
-    )
     (item "Empty Palace"
         <(piece "King" Each
             (or {
-                ("KingStep" "History_SaveMovementChange")
+                ("KingStep" All "History_SaveMovementChange")
                 (if "Castle_PreCheck"
                     (or {
                         "Castle_BishopSide"
@@ -1034,7 +1024,7 @@
     (item "Shafran"
         <(piece "King" Each
             (or {
-                ("KingStep" "History_SaveMovementChange")
+                ("KingStep" All "History_SaveMovementChange")
                 (if "Castle_PreCheck"
                     (or {
                         "Castle_BishopSide_Long"
@@ -1051,11 +1041,7 @@
     )
     (item "Starchess"
         <(piece "King" Each
-            (step Orthogonal
-                (to if:"IsToEmptyOrEnemy"
-                    "CaptureToPieceAndResetCounter"
-                )
-            )
+            ("KingStep" Orthogonal ~)
         )>
         "Starchess rules for King movement"
     )
@@ -1081,11 +1067,11 @@
         <(piece "Rook" Each ("SlideMove" Orthogonal ~))>
         "Glinski rules for Rook movement"
     )*
-    (item "Shafran"
+    (item "With history tracking"
         <(piece "Rook" Each
             ("SlideMove" Orthogonal "History_SaveMovementChange")
         )>
-        "Shafran rules for Rook movement, including castling support"
+        "Rules for Rook movement, including castling support"
     )
     (item "Starchess"
         <(piece "Rook" Each ("SlideMove" Vertical ~))>
@@ -1134,8 +1120,8 @@
         <
             (define "PawnSimpleCapture"
                 ("P12"
-                    (or {("Step_To" NW) ("Step_To" NE)})
-                    (or {("Step_To" SW) ("Step_To" SE)})
+                    (or {("PawnStep_To" NW) ("PawnStep_To" NE)})
+                    (or {("PawnStep_To" SW) ("PawnStep_To" SE)})
                 )
             )
             (define "EnPassant_Ortho"
@@ -1150,7 +1136,7 @@
             {
             "StepForwardToEmpty"
             (if (is In (from) (sites Start (what at:(from))))
-                "Step_Double"
+                "PawnStep_Double"
                 "EnPassant_Ortho"
             )
             "PawnSimpleCapture"
@@ -1160,15 +1146,14 @@
     )*
     (item "Brusky"
         <
-            (define "ForkStep_ToEmpty" ("ForkStep_ToEmpty_Base" NW NE SW SE))
-            (define "ForkStep_Double"  ("ForkStep_Double_Base" N S    NE SW    S N    SW NE))
-            (define "ForkStep"         ("ForkStep_Base"        WNW ENE WSW ESE))
-            (define "ForkEnPassant"    ("ForkEnPassant_Base"   WNW ENE WSW ESE))
+            (define "PawnFork_ToEmpty" ("PawnFork_ToEmpty_Base" NW NE SW SE))
+            (define "PawnFork_Double"  ("PawnFork_Double_Base"  NW SE    NE SW    SW NE    SE NW))
+            (define "PawnFork"         ("PawnFork_Base"         WNW ENE WSW ESE))
+            (define "EnPassantFork"    ("EnPassantFork_Base"    WNW ENE WSW ESE))
 
             // If an Enemy piece blocks all movement from either forward direction (so steps=1),
             //     then that Pawn cannot move in the other forward diretion.
             // But an Enemy piece two Cells away does not block movement in the other direction.
-
             (define "IsPawnUnblocked_Base"
                 (and
                     {
@@ -1187,44 +1172,44 @@
             {
             (if (is In (from) (sites Start (what at:(from))))
                 (or {
-                    ("Step_To" Forward)  // Can capture Forward only from Start Cell
+                    ("PawnStep_To" Forward)  // Can capture Forward only from Start Cell
                     (if "IsPawnUnblocked"
                         (or {
-                            "ForkStep_ToEmpty"
-                            "ForkStep_Double_Base"
+                            "PawnFork_ToEmpty"
+                            "PawnFork_Double"
                             }
                         )
                     )
                     }
                 )
                 (or {
-                    "ForkStep_ToEmpty"
-                    "ForkStep"
-                    "ForkEnPassant"
+                    "PawnFork_ToEmpty"
+                    "PawnFork"
+                    "EnPassantFork"
                     }
                 )
             )
-            "ForkStep"
+            "PawnFork"
             }
         >
         "Brusky rules for Pawn movement"
     )
     (item "De Vasa"
         <
-            (define "ForkStep_ToEmpty" ("ForkStep_ToEmpty_Base" N NE S SW))
-            (define "ForkStep_Double"  ("ForkStep_Double_Base" N S    NE SW    S N    SW NE))
-            (define "ForkStep"         ("ForkStep_Base"        NNW E SSE W))
-            (define "ForkEnPassant"    ("ForkEnPassant_Base"   NNW E SSE W))
+            (define "PawnFork_ToEmpty" ("PawnFork_ToEmpty_Base" N NE S SW))
+            (define "PawnFork_Double"  ("PawnFork_Double_Base"  N S    NE SW    S N    SW NE))
+            (define "PawnFork"         ("PawnFork_Base"         NNW E SSE W))
+            (define "EnPassantFork"    ("EnPassantFork_Base"    NNW E SSE W))
         >
         <>
         <
             {
-            "ForkStep_ToEmpty"
+            "PawnFork_ToEmpty"
             (if (is In (from) (sites Start (what at:(from))))
-                "ForkStep_Double"
-                "ForkEnPassant"
+                "PawnFork_Double"
+                "EnPassantFork"
             )
-            "ForkStep"
+            "PawnFork"
             }
         >
         "De Vasa rules for Pawn movement"
@@ -1241,9 +1226,9 @@
                     (is In (from) (sites Start (what at:(from))))
                     (not (is In (from) (sites Mover "CenterPawnStartCell")))
                 )
-                "Step_Double"
+                "PawnStep_Double"
             )
-            "Step_ToForwardDiag"
+            "PawnStep_ForwardDiag"
             "EnPassant_Diag"
             }
         >
@@ -1252,10 +1237,9 @@
     (item "Mini Hexchess"
         <>
         <>
-        <
-            {
+        <   {
             "StepForwardToEmpty"
-            "Step_ToForwardDiag"
+            "PawnStep_ForwardDiag"
             }
         >
         "Mini Hexchess rules for Pawn movement"
@@ -1263,18 +1247,18 @@
 
     (item "Shafran"
         <
-            // For variants that support initial Pawn moves with 3 steps (e.g., Shafran).
-            // Can the following e.p. capture then be made to any of the skipped spaces?
-            (define "Step_Multi"
+            // Shafran Chess includes an initial Pawn moves with 3 steps.
+            // This allows an e.p. capture to any of the skipped spaces.
+            (define "PawnStep_Multi"
                 (slide
                     Forward
                     (between
                         (min 3)
                         if:(is In (between) (sites Empty))
                     )
-                    (to if:(is In (to) (sites Empty)))
+                    (to if:"IsToEmpty")
                     (then
-                        (and
+                        (and  // BUG: There is no en passant after PawnStep_Multi.
                             {
                             (set Pending (between))
                             (set Var (last To))
@@ -1294,18 +1278,17 @@
         <   {
             "StepForwardToEmpty"
             (if (is In (from) (sites Start (what at:(from))))
-                // Multi-space pawn advancement.
                 (or {
                     (if (is In (from) (sites Mover "Pawn_Step2Cells"))
-                        "Step_Double"
+                        "PawnStep_Double"
                     )
                     (if (is In (from) (sites Mover "Pawn_Step3Cells"))
-                        "Step_Multi"
+                        "PawnStep_Multi"
                     )
                     }
                 )
             )
-            "Step_ToForwardDiag"
+            "PawnStep_ForwardDiag"
             "EnPassant_Diag"
             }
         >
@@ -1319,7 +1302,8 @@
 (rulesets {
     (ruleset "Ruleset/Glinski"
         {
-        "Board/Hexagon-6"
+        "Players/Players-2-N-S"
+        "Board/Hexagon-6N"
         "Board Details/None"
         "Graphics/Region Colours"
 
@@ -1327,8 +1311,8 @@
         "Placement by Players/None"
         "Promotion/Glinski"
 
-        "Placement of Non-Pawns/Glinski"
         "Placement of Pawns/Glinski"
+        "Placement of Non-Pawns/Glinski"
 
         "Movement of Kings/Glinski"
         "Movement of Queens/Glinski"
@@ -1337,11 +1321,11 @@
         "Movement of Knights/Glinski"
         "Movement of Pawns/Glinski"
         }
-    )
-
+    )*
     (ruleset "Ruleset/Glinski with 3 Pawns shifted one space"
         {
-        "Board/Hexagon-6"
+        "Players/Players-2-N-S"
+        "Board/Hexagon-6N"
         "Board Details/None"
         "Graphics/Region Colours"
 
@@ -1362,7 +1346,8 @@
     )
     (ruleset "Ruleset/Glinski with 5 Pawns shifted one space"
         {
-        "Board/Hexagon-6"
+        "Players/Players-2-N-S"
+        "Board/Hexagon-6N"
         "Board Details/None"
         "Graphics/Region Colours"
 
@@ -1381,9 +1366,9 @@
         "Movement of Pawns/Glinski"
         }
     )
-
     (ruleset "Ruleset/Brusky"
         {
+        "Players/Players-2-N-S"
         "Board/Hexagon-9"
         "Board Details/Brusky"
         "Graphics/Board Colours"
@@ -1395,17 +1380,17 @@
         "Placement of Pawns/Brusky"
         "Placement of Non-Pawns/Brusky"
 
-        "Movement of Kings/Glinski"
+        "Movement of Kings/With history tracking"
         "Movement of Queens/Glinski"
-        "Movement of Rooks/Glinski"
+        "Movement of Rooks/With history tracking"
         "Movement of Bishops/Glinski"
         "Movement of Knights/Glinski"
         "Movement of Pawns/Brusky"
         }
     )
-
     (ruleset "Ruleset/De Vasa"
         {
+        "Players/Players-2-NNE-SSW"
         "Board/Rhombus-9"
         "Board Details/None"
         "Graphics/Region Colours"
@@ -1417,17 +1402,17 @@
         "Placement of Pawns/De Vasa"
         "Placement of Non-Pawns/De Vasa"
 
-        "Movement of Kings/De Vasa"
+        "Movement of Kings/With history tracking"
         "Movement of Queens/Glinski"
-        "Movement of Rooks/Glinski"
+        "Movement of Rooks/With history tracking"
         "Movement of Bishops/Glinski"
         "Movement of Knights/Glinski"
         "Movement of Pawns/De Vasa"
         }
     )
-
     (ruleset "Ruleset/De Vasa with only 8 rows"
         {
+        "Players/Players-2-NNE-SSW"
         "Board/Rhombus-9"
         "Board Details/De Vasa with only 8 rows"
         "Graphics/Region Colours"
@@ -1439,19 +1424,19 @@
         "Placement of Pawns/De Vasa with only 8 rows"
         "Placement of Non-Pawns/De Vasa with only 8 rows"
 
-        "Movement of Kings/De Vasa"
+        "Movement of Kings/With history tracking"
         "Movement of Queens/Glinski"
-        "Movement of Rooks/Glinski"
+        "Movement of Rooks/With history tracking"
         "Movement of Bishops/Glinski"
         "Movement of Knights/Glinski"
         "Movement of Pawns/De Vasa"
         }
     )
-
     // Created to test Castling, and left in
     (ruleset "Ruleset/Empty Palace"
         {
-        "Board/Hexagon-6"
+        "Players/Players-2-N-S"
+        "Board/Hexagon-6N"
         "Board Details/None"
         "Graphics/Region Colours"
 
@@ -1464,15 +1449,15 @@
 
         "Movement of Kings/Empty Palace"
         "Movement of Queens/Glinski"
-        "Movement of Rooks/Glinski"
+        "Movement of Rooks/With history tracking"
         "Movement of Bishops/Glinski"
         "Movement of Knights/Glinski"
         "Movement of Pawns/Glinski"
     })
-
     (ruleset "Ruleset/McCooey"
         {
-        "Board/Hexagon-6"
+        "Players/Players-2-N-S"
+        "Board/Hexagon-6N"
         "Board Details/None"
         "Graphics/Region Colours"
 
@@ -1493,7 +1478,8 @@
     )
     (ruleset "Ruleset/Mini Hexchess"
         {
-        "Board/Hexagon-4"
+        "Players/Players-2-N-S"
+        "Board/Hexagon-4N"
         "Board Details/None"
         "Graphics/Region Colours"
 
@@ -1514,7 +1500,8 @@
     )
     (ruleset "Ruleset/Shafran"
         {
-        "Board/Hexagon-6"
+        "Players/Players-2-N-S"
+        "Board/Hexagon-6N"
         "Board Details/Shafran"
         "Graphics/Region Colours"
 
@@ -1527,7 +1514,7 @@
 
         "Movement of Kings/Shafran"
         "Movement of Queens/Glinski"
-        "Movement of Rooks/Glinski"
+        "Movement of Rooks/With history tracking"
         "Movement of Bishops/Glinski"
         "Movement of Knights/Glinski"
         "Movement of Pawns/Shafran"
@@ -1535,7 +1522,8 @@
     )
     (ruleset "Ruleset/Starchess"
         {
-        "Board/Hexagon-5"
+        "Players/Players-2-N-S"
+        "Board/Hexagon-5N"
         "Board Details/Starchess"
         "Graphics/Region Colours"
 
@@ -1560,15 +1548,16 @@
 //------------------------------------------------------------------------------
 
 (metadata
+
 (info
 {
-
 (version "0.9.3")
-(classification "board/war/chess")
 
-(description "Chess variations played on a hexagonal board")
-(origin  "The most popular hexagonal chess variant is Gliński's Chess, invented in 1936 by Władysław Gliński, though at least one ealier hexagonal variant existed: Wellisch's 3-player Chess, from 1912.")
-(credit "Jay Coskey, with some small  functions drawn from Chess.lud, by Eric Piette")
+(description "Chess variants played on boards consisting of hexagons.
+
+Note that, in most forms of Hexagonal Chess, the board is coloured with a three-colour uniform tiling---see https://en.wikipedia.org/wiki/Hexagonal_tiling. With such a colouring, a King on a given space near the center of the board can move to any of the 6 adjacent or 'orthogonally connected' spaces, which will have a different colour than the original space. In some variants of Hexagonal Chess, the King can also move to the six closest spaces of the same colour, which are sometimes called 'diagonally connected'. If the board has a center space, that space is often coloured gray, or with the colour of medium brightness.
+")
+
 (aliases
     {
     "Hexagonal Chess"
@@ -1588,11 +1577,11 @@
     "Starchess"
     }
 )
+(origin  "The most popular hexagonal chess variant is Gliński's Chess, invented in 1936 by Władysław Gliński, though some other variants had been invented decades earlier.")
+(classification "board/war/chess")
+(credit "Jay Coskey, with some small functions drawn from Chess.lud, by Eric Piette")
 
-(source "For an overview, see https://en.wikipedia.org/wiki/Hexagonal_chess. For details, see The Classified Encyclopedia of Chess Variants, by D. B. Pritchard (2nd edition, completed and edited by John Beasley, 2007)."
-)
-
-(rules "'Hexagonal Chess' can refer to any chess variant played on a board consisting of hexagonal spaces.")
+(rules "'Hexagonal Chess' can refer to any chess variant played on a board consisting of hexagonal spaces. Some people also use the term to refer to chess played on hexagonal boards whose spaces might not be hexagonal.")
 
 // Rules: Redirect
 (useFor "Ruleset/Glinski with 3 Pawns shifted one space" (rules "See the Glinski variant for the rules for this variant."))
@@ -1604,9 +1593,9 @@
 (useFor "Ruleset/Glinski" (rules "Glinski Chess was invented by Władysław Gliński in 1936, and first launched in 1949."))
 (useFor "Ruleset/Brusky" (rules "Brusky Chess was invented by Yakov Brusky 1966."))
 (useFor "Ruleset/De Vasa" (rules "De Vasa Chess was invented by Helge E. de Vasa in 1953-1954."))
-(useFor "Ruleset/Empty Palace" (rules "Empty Chess was invented by Jay Coskey in 2020."))
-(useFor "Ruleset/McCooey" (rules "McCooey Chess was invented by Dave McCooey & Richard Honeycutt in 1978-1979."))
-(useFor "Ruleset/Mini Hexchess" (rules "Mini Hexchess was invented by Dave McCooey & Richard Honeycutt in 1997."))
+(useFor "Ruleset/Empty Palace" (rules "Empty Palace Chess was invented by Jay Coskey in 2020."))
+(useFor "Ruleset/McCooey" (rules "McCooey Chess was invented by Dave McCooey and Richard Honeycutt in 1978-1979."))
+(useFor "Ruleset/Mini Hexchess" (rules "Mini Hexchess was invented by Dave McCooey and Richard Honeycutt in 1997."))
 (useFor "Ruleset/Shafran" (rules "Shafran Chess was invented by Isaak Grigorevich Shafran in 1939, and registered in 1956."))
 (useFor "Ruleset/Starchess" (rules "Starchess was invented by László Polgár."))
 
@@ -1617,23 +1606,23 @@
 (useFor "Ruleset/Empty Palace" (rules "Empty Palace Chess is played on a hexagonal board with each side having length 6, and each space oriented horizontally. It has 91 spaces."))
 (useFor "Ruleset/McCooey" (rules "McCooey Chess is played on a hexagonal board with each side having length 6, and each space oriented horizontally. It has 91 spaces."))
 (useFor "Ruleset/Mini Hexchess" (rules "Mini Hexchess is played on a hexagonal board with each side having length 5, and each space oriented horizontally. It has 37 spaces."))
-(useFor "Ruleset/Shafran" (rules "Shafran Chess is played on 'narrow' hexagonal board that can be thought of as a hexagonal board of size 6 with some outer spaces removed. It has 70 spaces."))
+(useFor "Ruleset/Shafran" (rules "Shafran Chess is played on a 'narrow' hexagonal board that can be thought of as a hexagonal board of size 6 with some outer spaces removed. It has 70 spaces."))
 (useFor "Ruleset/Starchess" (rules "Starchess is played on a star-shaped hexagonal board that can be thought of as a hexagonal board with each side having length 6, but with four spaces removed from each corner. It has 37 spaces."))
 
 // Rules: Piece Movement
 (useFor "Ruleset/Glinski" (rules "
 * Kings can move one space in any of the 12 directions from the current space. There is no castling in Glinski Chess.
-* Rooks can slide in any of the six connected directions from their current space---North, South, or 60 degrees off either of those.
+* Rooks can slide in any of the six 'adjacent' directions from their current space---North, South, or 60 degrees off either of those.
 * Bishops can slide along the six directions: West, East, or 30 degrees off due North or or 30 degrees off due South. Note that, given the 3-colour colouring of the board, each Bishop remains on the same colour that it started the game on.
 * Queens can make any move that would be available to a rook or a bishop on the current space.
-* Knights can leap to any space that is two spaces away along a connected direction (North, South, or 60 degrees off either of those), plus one more space 60 degrees off of that direction. Note that a Knight always moves to a space of a different colour than the space it moved from.
+* Knights can leap to any space that is two spaces away along an adjacent direction (North, South, or 60 degrees off either of those), plus one more space 60 degrees off of that direction. Note that a Knight always moves to a space of a different colour than the space it moved from.
 * Pawns can advance one space forward without capturing. They capture by moving to one of the two adjacent spaces 60 degrees left or right of forward. A Pawn on a Pawn start space can advance two spaces forward without capturing, even if it has previously moved (by capturing) to a different Pawn start space than it started the game on. Pawns are promoted upon reaching the farthest rank in a given file.
 "))
 
 (useFor "Ruleset/Brusky" (rules "
 * Queens, Rooks, Bishops, and Knights move as in Glinski Chess.
 * Kings castle either kingside (moving two spaces) or queenside (moving three spaces).
-* Pawns, when moving from a Pawn start space, can advance without capturing to either of the two adjacent spaces slightly left or right of forward, unless they are 'blocked'. A Pawn on a Pawn start space is 'blocked' if an enemy piece is adjacent to it in either of the forward adjacent directions. Pawns capture along a forward diagonal (i.e., to a space one row forward and off to the side, to a space connected by an edge, and having the same colour). A Pawn on a Pawn start space can also capture forwards (i.e., to the space directly ahead, with the same colour). Pawns and promoted upon reaching the farthest row.
+* Pawns, when moving from a Pawn start space, can advance without capturing to either of the two adjacent spaces slightly left or right of forward, unless they are 'blocked'. A Pawn on a Pawn start space is 'blocked' if an enemy piece is adjacent to it in either of the forward adjacent directions. Pawns capture along a forward diagonal (i.e., to a space one row forward and off to the side, to a space connected by an edge, and having the same colour). A Pawn on a Pawn start space can also capture forwards (i.e., to the space directly ahead, having the same colour). Pawns and promoted upon reaching the farthest row.
 "))
 
 (useFor "Ruleset/De Vasa" (rules "
@@ -1655,23 +1644,23 @@
 (useFor "Ruleset/Mini Hexchess" (rules "
 * Kings, Rooks, Bishops, and Knights move as in Glinski Chess.
 * There are no Queens in Mini Hexchess.
-* Pawns can advance one space forward without capturing. Pawns cannot advance multiple spaces on their initial move. Pawns capture 'diagonally forward' (i.e., to a space ahead connected by an edge, and having the same colour). Pawns are promoted when they reach the farthest rank in a given file. Pawns are promoted upon reaching the farthest rank in a given file. Since there are no Queens in Mini Hexchess, Pawns can be promoted only to a Rook, Bishop, or Knight.
+* Pawns can advance one space forward without capturing. Pawns can never advance more than one space. Pawns capture 'diagonally forward' (i.e., to a space ahead connected by an edge, and having the same colour). Pawns are promoted when they reach the farthest rank in a given file. Pawns are promoted upon reaching the farthest rank in a given file. Since there are no Queens in Mini Hexchess, Pawns can be promoted only to a Rook, Bishop, or Knight.
 "))
 
 (useFor "Ruleset/Shafran" (rules "
 * Queens, Rooks, Bishops, and Knights move as in Glinski Chess.
-* Kings move as in Glinski Chess, but can also castle. In Long Castling, the King moves three spaces toward its queenside Rook and the Rook moves two spaces in the opposite direction. In Short Castling, the King moves two spaces toward its bishopside Rook, and the Rook moves three spaces.
+* Kings move as in Glinski Chess, but can also castle. In 'Long Castling', the King moves three spaces toward its queenside Rook and the Rook moves two spaces in the opposite direction. In 'Short Castling', the King moves two spaces toward its bishopside Rook, and the Rook moves three spaces.
 * Pawns can advance one space forward without capturing. A Pawn on a Pawn start space can advance any number of spaces, up to the middle row of the board. Thus the outermost Pawns on their first moves can only advance one space, while the Pawns in the three center columns can advance up to three spaces. Pawns capture 'diagonally forward' (i.e., to a space ahead connected by an edge, and having the same colour). Pawns are promoted upon reaching the farthest rank in a given file.
 "))
 
 (useFor "Ruleset/Starchess" (rules "
 * Starchess starts off with the non-Pawn pieces being placed behind the Pawns. This happens one piece at a time, in alternating turns, until all non-Pawn pieces have been placed. Then the movement phase of the game begins as usual.
 * Knights move as in Glinsky Chess.
-* Queens can slide in any of the six connected directions from their current space---North, South, or 60 degrees off either of those.
+* Queens can slide in any of the six adjacent directions from their current space---forward, backward, or 60 degrees off either of those.
 * Kings can move one space in any of those same six directions.
 * Rooks can slide forward or backward only in their given column.
-* Bishops can slide in only four of the connected directions: Northwest, Northeast, Southwest, or Southeast.
-* Pawns can advance one space forward without capturing. A Pawn on a Pawn start space can advance two spaces forward, even if it has previously moved (by capturing) to a different Pawn start space than it started the game on. Pawns capture by moving to one of the two adjacent spaces 60 degrees left or right of forward. Pawns are promoted upon reaching the farthest rank in a given file. Some terminology: a Pawn off to the side, in one of the two spaces at the extremes of the middle row is called a 'mummy', while a Pawn in one of the spaces adjacent to that is called a 'dead Pawn'. Mummies and dead Pawns are blocked from being promoted until they can retrun to one of the five central columns.
+* Bishops can slide in only four of the adjacent directions: Northwest, Northeast, Southwest, or Southeast.
+* Pawns can advance one space forward without capturing. A Pawn on a Pawn start space can advance two spaces forward, even if it has previously moved (by capturing) to a different Pawn start space than it started the game on. Pawns capture by moving to one of the two adjacent spaces 60 degrees left or right of forward. Pawns are promoted upon reaching the farthest rank in a given file. Some terminology: a Pawn off to the side, in one of the two spaces at the extremes of the middle row is called a 'mummy', while a Pawn in one of the spaces adjacent to that is called a 'dead Pawn'. Mummies and dead Pawns are blocked from being promoted until they can return to one of the five central columns.
 "))
 
 // Rules: Game ending
@@ -1681,15 +1670,12 @@
 (useFor "Ruleset/Glinski" (rules "In Glinski's Chess, the player that caused the stalemate is awarded 3/4 of a point, while the other player is awarded 1/4 of a point."
 ))
 
-// Rules: Terminology
-(useFor "Ruleset/Starchess" (rules "
-Note that, in all forms of Hexagonal Chess, the board is usually coloured with a three-colour uniform tiling---see https://en.wikipedia.org/wiki/Hexagonal_tiling. With such a colouring, a King on a given space near the center of the board can move to any of the 6 adjacent or 'orthogonally connected' spaces, which will have a different colour than the original space. In some variants of Hexagonal Chess, the King can also move to the six closest spaces of the same colour, which are sometimes called 'diagonally connected'. If the board has a center space, that space is often coloured gray, or with the colour of medium brightness.
-"))
-
 // Rules: Variations
 (useFor "Ruleset/Glinski" (rules "Variations: Move the center 3 or 5 Pawns toward the edge of the board by one space, as proposed in A Player's Guide to Table Games, by John Jackson, Stackpole Books, 1975.
 "))
 
+(source "For an overview, see https://en.wikipedia.org/wiki/Hexagonal_chess. For details, see The Classified Encyclopedia of Chess Variants, by D. B. Pritchard (2nd edition, completed and edited by John Beasley, 2007)."
+)
 }
 )
 
@@ -1702,5 +1688,5 @@ Note that, in all forms of Hexagonal Chess, the board is usually coloured with a
     })
 
     (ai "Chess_ai")
-    // (ai "Hexagonal Chess_ai")
+    // (ai "Hexagonal Chess_ai")  // Possible values: Q:12, R:7.5, B:4.5, N:4.5, P:1
 )
