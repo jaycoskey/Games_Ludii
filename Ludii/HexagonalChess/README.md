@@ -23,17 +23,7 @@ Currently, the following steps are needed to run play Hexagonal Chess using the 
   to be limited to those games already integrated into the system. The online play of games loaded from files
   is not supported.
 
-## Bugs
-Ludii system (v0.9.3) bugs to report:
-* Changing the name of a game loaded from a File to match the filename can trigger the error message:
-      The game could not be compiled, but no specific error was identified."..
-* The definition of StepForwardToEmpty in section A.6.1 of the Ludii Language Reference
-  doesn't match the implementation in rules/play/moves/StepForwardToEmpty.def.
-* Whitespace sensitivity. Adding a newline between the keyword "rulesets" and its
-  following open brace can trigger the error mesage:
-      Could not expand. Check that bracket pairs '(..)' and '{..}' match.
-
-## Feature Requests
+## Ludii Feature Requests
 Ludii system (v0.9.3) feature requests:
 * **Relative direction enums for hexagonal boards.**
   Relative direction enums for hexagon and rhombus board shapes.
