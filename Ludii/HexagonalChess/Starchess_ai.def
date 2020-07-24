@@ -1,0 +1,19 @@
+(define "Starchess_ai"
+    (bestAgent "AlphaBeta")
+    (heuristics {
+        (material transformation:(divNumInitPlacement) pieceWeights:{
+            // Estimates of relative value. Not supported by experimentation. 
+            (pair "Pawn1"   1.0)
+            (pair "Pawn2"   1.0)
+            (pair "Rook1"   2.0)
+            (pair "Rook2"   2.0)
+            (pair "Bishop1" 3.0)
+            (pair "Bishop2" 3.0)
+            (pair "Knight1" 4.5)
+            (pair "Knight2" 4.5)
+            (pair "Queen1"  7.5)
+            (pair "Queen2"  7.5)
+        })
+    })
+    
+)
