@@ -56,9 +56,6 @@
         (remove (to))            // Remove Pawn
         (if ("IsToA" "King")
             (and
-                // BUG: The trigger ludeme triggers ActionSetCheckmate,
-                //      but does not cause (is Triggered ...) to later
-                //      evalue to true.
                 (trigger Mover)  // Record winner
                 (remove (to))    // Remove King
             )
@@ -148,8 +145,8 @@
 (define "KingSideSwap"
     (if (and
             {
-            (not ("IsInCheck" "King" Mover at:(to)))
-            ("History_HasNeverMoved" "RightRook")
+            ("History_HasNeverMoved" "RookRight")
+            (not ("IsInCheck" "King" Mover at:(mapEntry "RookRight" Mover)))
             }
         )
         (swap Pieces #1 #2
@@ -162,10 +159,10 @@
 (define "QueenSideSwap"
     (if (and
             {
-            (not ("IsInCheck" "King" Mover at:(to)))
-            (not ("IsInCheck" "King" Mover at:(between)))
-            ("History_HasNeverMoved" "LeftRook")
-            (is In ("P123" 2 70 69) (sites Empty))  // HACK
+            ("History_HasNeverMoved" "RookLeft")
+            (not ("IsInCheck" "King" Mover at:(mapEntry "RookLeft" Mover)))
+            (not ("IsInCheck" "King" Mover at:(mapEntry "Queen" Mover)))
+            (is In (mapEntry "Queen" Mover) (sites Empty))
             }
         )
         (and
@@ -303,9 +300,11 @@
             )
         )
 
-        (map "King"      {(pair 1 "I4") (pair 2 "A3") (pair 3 "H11")})
-        (map "RookLeft"  {(pair 1 "G2") (pair 2 "A5") (pair 3 "J11")})
-        (map "RookRight" {(pair 1 "J5") (pair 2 "A2") (pair 3 "G11")})
+        (map "King"      {(pair 1 "L1") (pair 2 "C8")  (pair 3 "R9")})
+        (map "RookLeft"  {(pair 1 "H1") (pair 2 "E10") (pair 3 "T7")})
+        (map "RookRight" {(pair 1 "N1") (pair 2 "B7")  (pair 3 "Q10")})
+
+        (map "Queen"     {(pair 1 2)    (pair 2 70)    (pair 3 69)})
 
         (hand Each size:3)  // One for each of Queen, Rook, Knight
 
@@ -317,7 +316,7 @@
             }
         )
 
-        (regions "PromotionZone" P1 (sites {"F11" "H11" "J11" "L11" "N11" "P11"})) // North
+        (regions "PromotionZone" P1 (sites Top))
         (regions "PromotionZone" P2 (sites {"U6" "T5" "S4" "R3" "Q2" "P1"}))  // Side ESE
         (regions "PromotionZone" P3 (sites {"F1" "E2" "D3" "C4" "B5" "A6"}))  // Side WSW
 
