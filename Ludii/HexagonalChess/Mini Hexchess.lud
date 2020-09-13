@@ -1,5 +1,5 @@
 // Mini Hexchess
-// Copyright 2020, Jay M. Coskey, except functions drawn from Chess.lud, as noted
+// Copyright 2020, Jay M. Coskey, except snippets from Chess.lud, as noted
 
 //----------------------------------------
 // General functions
@@ -34,7 +34,7 @@
 // Source: Chess.lud - NextCanNotMove
 (define "NextCannotMove"
     (not (can Move (do
-                (forEach Piece (next))
+                (forEach Piece Next)
                 ifAfterwards:(not ("IsInCheck" "King" Next))
     )))
 )
@@ -93,7 +93,7 @@
 //----------------------------------------
 // Usage: ("PromoteTo" <piece_types>)
 (define "PromoteTo"
-    (move Promote (last To) #1 (who Mover))
+    (move Promote (last To) #1 Mover)
 )
 
 //------------------------------------------------------------------------------
@@ -105,11 +105,10 @@
         (board (rotate 90 (hex 4)))
 
         (piece "King"   Each ("KingCaptureStep"  All ~))
-        (piece "Queen"  Each ("SlideCaptureMove" All ~))
         (piece "Rook"   Each ("SlideCaptureMove" Orthogonal ~))
         (piece "Bishop" Each ("SlideCaptureMove" Diagonal ~))
-        (piece "Knight" Each
-            (leap
+        (piece "Knight" Each (move
+                Leap
                 "KnightWalk"
                 (to if:"IsToEmptyOrEnemy"
                     "CaptureToPieceAndResetCounter"
@@ -145,25 +144,25 @@
     (rules
         (start
             {
-            (place "King1"   coord:"D3")
-            (place "Rook1"   coord:"E2")
-            (place "Bishop1" coord:"D1")
-            (place "Knight1" coord:"C2")
+            (place "King1"   coord:"B2")
+            (place "Rook1"   coord:"B1")
+            (place "Bishop1" coord:"A1")
+            (place "Knight1" coord:"A2")
 
-            (place "King2"   coord:"D11")
-            (place "Rook2"   coord:"C12")
-            (place "Bishop2" coord:"D13")
-            (place "Knight2" coord:"E12")
+            (place "King2"   coord:"F6")
+            (place "Rook2"   coord:"F7")
+            (place "Bishop2" coord:"G7")
+            (place "Knight2" coord:"G6")
 
-            (place "Pawn1" {"B3" "C4" "D5" "E4" "F3"})
-            (place "Pawn2" {"B11" "C10" "D9" "E10" "F11"})
+            (place "Pawn1" {"A3" "B3" "C3" "C2" "C1"})
+            (place "Pawn2" {"E7" "E6" "E5" "F5" "G5"})
             }
         )
         phases:{
         (phase "Movement"
             (play
                 (if ("SameTurn")
-                    ("PromoteTo" (what {"Rook" "Bishop" "Knight"}))
+                    ("PromoteTo" (piece {"Rook" "Bishop" "Knight"}))
                     (do (forEach Piece)
                         ifAfterwards:(not ("IsInCheck" "King" Mover))
                     )
@@ -196,13 +195,13 @@
 
     (info
         {
-        (version "0.9.4")
+        (version "1.0.5")
 
         (description "A chess variant played on a board made of hexagons")
         (aliases { "Hexagonal Chess" })
         (origin "Mini Hexchess was invented by Dave McCooey and Richard Honeycutt in 1997.")
         (classification "board/war/chess")
-        (credit "Jay Coskey, with some small functions drawn from Chess.lud, by Eric Piette")
+        (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
 
         (rules "Mini Hexchess is played on a hexagonal board with each side having length 5, and each space oriented horizontally. The board has 37 spaces.
 
@@ -218,7 +217,7 @@ Piece Movement:
 The game ends on a checkmate or stalemate.
 ")
 
-        (source "For a comparison of popular versions of hexagonal chess, see https://en.wikipedia.org/wiki/Hexagonal_chess. For more details on other chess variants, see The Classified Encyclopedia of Chess Variants, by D. B. Pritchard (2nd edition, completed and edited by John Beasley, 2007).")
+        (source "The setup for Mini Hexchess can be found at the Chess Variant Page, https://www.chessvariants.com/hexagonal.dir/minihex.html. For a comparison of popular versions of hexagonal chess, see https://en.wikipedia.org/wiki/Hexagonal_chess. For more details on other chess variants, see The Classified Encyclopedia of Chess Variants, by D. B. Pritchard (2nd edition, completed and edited by John Beasley, 2007).")
         }
     )
 

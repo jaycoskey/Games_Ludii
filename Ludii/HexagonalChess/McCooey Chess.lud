@@ -1,5 +1,5 @@
 // McCooey Chess
-// Copyright 2020, Jay M. Coskey, except functions drawn from Chess.lud, as noted
+// Copyright 2020, Jay M. Coskey, except snippets from Chess.lud, as noted
 
 //----------------------------------------
 // General functions
@@ -22,7 +22,7 @@
 )
 
 (define "IsFromInStartCell"
-    (is In (from) (sites Start (what at:(from))))
+    (is In (from) (sites Start (piece (what at:(from)))))
 )
 
 (define "IsToEmpty"
@@ -38,7 +38,7 @@
 // Source: Chess.lud - NextCanNotMove
 (define "NextCannotMove"
     (not (can Move (do
-                (forEach Piece (next))
+                (forEach Piece Next)
                 ifAfterwards:(not ("IsInCheck" "King" Next))
     )))
 )
@@ -147,7 +147,7 @@
 
 // Usage: ("PromoteTo" <piece_types>)
 (define "PromoteTo"
-    (move Promote (last To) #1 (who Mover))
+    (move Promote (last To) #1 Mover)
 )
 
 //------------------------------------------------------------------------------
@@ -162,7 +162,8 @@
         (piece "Queen"  Each ("SlideCaptureMove" All ~))
         (piece "Rook"   Each ("SlideCaptureMove" Orthogonal ~))
         (piece "Bishop" Each ("SlideCaptureMove" Diagonal ~))
-        (piece "Knight" Each (leap
+        (piece "Knight" Each (move
+                Leap
                 "KnightWalk"
                 (to if:"IsToEmptyOrEnemy"
                     "CaptureToPieceAndResetCounter"
@@ -200,35 +201,35 @@
         (regions "PromotionZone" P2 (union (sites Side SW) (sites Side SE)))
 
         (regions "Region-Dark"   (sites Phase 0))
-        (regions "Region-Light"  (sites Phase 1))
-        (regions "Region-Medium" (sites Phase 2))
+        (regions "Region-Light"  (sites Phase 2))
+        (regions "Region-Medium" (sites Phase 1))
         }
     )
 
     (rules
         (start
             {
-            (place "King1"   coord:"G2")
-            (place "Queen1"  coord:"E2")
-            (place "Rook1"   {"D3" "H3"})
-            (place "Bishop1" {"F1" "F3" "F5"})
-            (place "Knight1" {"E4" "G4"})
+            (place "King1"   coord:"B1")
+            (place "Queen1"  coord:"A2")
+            (place "Rook1"   {"A3" "C1"})
+            (place "Bishop1" {"A1" "B2" "C3"})
+            (place "Knight1" {"B3" "C2"})
 
-            (place "King2"   coord:"G20")
-            (place "Queen2"  coord:"E20")
-            (place "Rook2"   {"D19" "H19"})
-            (place "Bishop2" {"F17" "F19" "F21"})
-            (place "Knight2" {"E18" "G18"})
+            (place "King2"   coord:"K10")
+            (place "Queen2"  coord:"J11")
+            (place "Rook2"   {"I11" "K9"})
+            (place "Bishop2" {"I9" "J10" "K11"})
+            (place "Knight2" {"I10" "J9"})
 
-            (place "Pawn1" {"C4" "D5" "E6" "F7" "G6" "H5" "I4"})
-            (place "Pawn2" {"C18" "D17" "E16" "F15" "G16" "H17" "I18"})
+            (place "Pawn1" {"A4"  "B4"  "C4" "D4" "D3" "D2" "D1"})
+            (place "Pawn2" {"H11" "H10" "H9" "H8" "I8" "J8" "K8"})
             }
         )
         phases:{
         (phase "Movement"
             (play
                 (if ("SameTurn")
-                    ("PromoteTo" (what {"Queen" "Rook" "Bishop" "Knight"}))
+                    ("PromoteTo" (piece {"Queen" "Rook" "Bishop" "Knight"}))
                     (do (forEach Piece)
                         ifAfterwards:(not ("IsInCheck" "King" Mover))
                     )
@@ -261,13 +262,13 @@
 
     (info
         {
-        (version "0.9.4")
+        (version "1.0.5")
 
-        (description "A chess variant played on boards made of hexagons")
+        (description "A chess variant played on a board made of hexagons")
         (aliases { "McCooey's Chess" "Hexagonal Chess" })
         (origin "McCooey Chess was invented by Dave McCooey and Richard Honeycutt in 1978-1979.")
         (classification "board/war/chess")
-        (credit "Jay Coskey, with some small functions drawn from Chess.lud, by Eric Piette")
+        (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
 
         (rules "McCooey Chess is played on a hexagonal board with each side having length 6, and each space oriented horizontally. The board has has 91 spaces.
 

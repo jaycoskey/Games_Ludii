@@ -1,5 +1,5 @@
 // De Vasa Chess
-// Copyright 2020, Jay M. Coskey, except functions drawn from Chess.lud, as noted
+// Copyright 2020, Jay M. Coskey, except snippets from Chess.lud, as noted
 
 //----------------------------------------
 // General functions
@@ -22,7 +22,7 @@
 )
 
 (define "IsFromInStartCell"
-    (is In (from) (sites Start (what at:(from))))
+    (is In (from) (sites Start (piece (what at:(from)))))
 )
 
 (define "IsToEmpty"
@@ -38,7 +38,7 @@
 // Source: Chess.lud - NextCanNotMove
 (define "NextCannotMove"
     (not (can Move (do
-                (forEach Piece (next))
+                (forEach Piece Next)
                 ifAfterwards:(not ("IsInCheck" "King" Next))
     )))
 )
@@ -72,7 +72,7 @@
 
 // Source: Chess.lud - PieceHasMoved
 (define "History_SaveMovement"
-    (set State (last To) 0)
+    (set State at:(last To) 0)
 )
 
 // Source: Chess.lud - RememberPieceHasMoved
@@ -159,14 +159,13 @@
     )
 )
 
-(define "Castle_KingSide_P1"  ("Castle" ESE 2 "RookRight" WNW 2))
-(define "Castle_QueenSide_P1" ("Castle" WNW 3 "RookLeft"  ESE 3))
+(define "Castle_Kingside_P1"  ("Castle" ESE 2 "RookRight" WNW 2))
+(define "Castle_Kingside_P2"  ("Castle" WNW 2 "RookLeft"  ESE 2))
+(define "Castle_Kingside"  ("P12" "Castle_Kingside_P1" "Castle_Kingside_P2"))
 
-(define "Castle_KingSide_P2"  ("Castle" ESE 2 "RookRight" WNW 2))
-(define "Castle_QueenSide_P2" ("Castle" WNW 3 "RookLeft"  ESE 3))
-
-(define "Castle_KingSide"  ("P12" "Castle_KingSide_P1"  "Castle_KingSide_P2"))
-(define "Castle_QueenSide" ("P12" "Castle_QueenSide_P1" "Castle_QueenSide_P2"))
+(define "Castle_Queenside_P1" ("Castle" WNW 3 "RookLeft"  ESE 3))
+(define "Castle_Queenside_P2" ("Castle" ESE 3 "RookRight" WNW 3))
+(define "Castle_Queenside" ("P12" "Castle_Queenside_P1" "Castle_Queenside_P2"))
 
 //----------------------------------------
 // Pawn movement
@@ -268,7 +267,7 @@
 //----------------------------------------
 // Usage: ("PromoteTo" <piece_types>)
 (define "PromoteTo"
-    (move Promote (last To) #1 (who Mover))
+    (move Promote (last To) #1 Mover)
 )
 
 //------------------------------------------------------------------------------
@@ -284,8 +283,8 @@
                 ("KingStepCapture" All "History_SaveMovementChange")
                 (if "Castle_PreCheck"
                     (or {
-                        "Castle_KingSide"
-                        "Castle_QueenSide"
+                        "Castle_Kingside"
+                        "Castle_Queenside"
                         }
                     )
                 )
@@ -295,8 +294,8 @@
         (piece "Queen"  Each ("SlideCaptureMove" All ~))
         (piece "Rook"   Each ("SlideCaptureMove" Orthogonal "History_SaveMovementChange"))
         (piece "Bishop" Each ("SlideCaptureMove" Diagonal ~))
-        (piece "Knight" Each
-            (leap
+        (piece "Knight" Each (move
+                Leap
                 "KnightWalk"
                 (to if:"IsToEmptyOrEnemy"
                     "CaptureToPieceAndResetCounter"
@@ -322,9 +321,9 @@
             )
         )
 
-        (map "King"      {(pair 1 "F4") (pair 2 <BoardConfig:King2Start>)})
+        (map "King"      {(pair 1 "A4") (pair 2 <BoardConfig:King2Start>)})
         (map "RookLeft"  {(pair 1 "A9") (pair 2 <BoardConfig:RookLeft2Start>)})
-        (map "RookRight" {(pair 1 "I1") (pair 2 <BoardConfig:RookRight2Start>)})
+        (map "RookRight" {(pair 1 "A1") (pair 2 <BoardConfig:RookRight2Start>)})
 
         (regions "Region-Dark"   (sites Phase <BoardConfig:RegionDarkPhase>))
         (regions "Region-Light"  (sites Phase <BoardConfig:RegionLightPhase>))
@@ -338,11 +337,11 @@
     (rules
         (start
             {
-            (place "King1"   coord:"F4" state:1)
-            (place "Queen1"  coord:"D6")
-            (place "Rook1"   {"A9" "I1"} state:1)
-            (place "Bishop1" {"C7" "E5" "G3"})
-            (place "Knight1" {"B8" "H2"})
+            (place "King1"   coord:"A4" state:1)
+            (place "Queen1"  coord:"A6")
+            (place "Rook1"   {"A9" "A1"} state:1)
+            (place "Bishop1" {"A7" "A5" "A3"})
+            (place "Knight1" {"A8" "A2"})
 
             (place "King2"   coord:<BoardConfig:King2Start> state:1)
             (place "Queen2"  coord:<BoardConfig:Queen2Start>)
@@ -358,7 +357,7 @@
         (phase "Movement"
             (play
                 (if ("SameTurn")
-                    ("PromoteTo" (what {"Queen" "Rook" "Bishop" "Knight"}))
+                    ("PromoteTo" (piece {"Queen" "Rook" "Bishop" "Knight"}))
                     (do (forEach Piece)
                         ifAfterwards:(not ("IsInCheck" "King" Mover))
                     )
@@ -391,32 +390,32 @@
     {
     (item "9"
         <(hex Diamond 9)>
-        <{"C11" "D10" "E9" "F8" "G7" "H6" "I5" "J4" "K3"}>       // Pawn1Start
-        <"N12">                // King2Start
-        <"L14">                // Queen2Start
-        <"I17">                // RookLeft2Start
-        <"Q9">                 // RookRight2Start
-        <{"K15" "M13" "O11"}>  // Bishop2Start
-        <{"J16" "P10"}>        // Knight2Start
-        <{"G15" "H14" "I13" "J12" "K11" "L10" "M9" "N8" "O7"}>   // Pawn2Start
-        <0>
-        <1>
-        <2>
+        <{"C9" "C8" "C7" "C6" "C5" "C4" "C3" "C2" "C1"}>  // Pawn1Start
+        <"I6">              // King2Start
+        <"I4">              // Queen2Start
+        <"I9">              // RookLeft2Start
+        <"I1">              // RookRight2Start
+        <{"I7" "I5" "I3"}>  // Bishop2Start
+        <{"I8" "I2"}>       // Knight2Start
+        <{"G9" "G8" "G7" "G6" "G5" "G4" "G3" "G2" "G1"}>  // Pawn2Start
+        <0>                 // Dark color region
+        <1>                 // Light color region
+        <2>                 // Medium color region
         "9x9 rhombus-shaped board, with pieces on rows 1, 3, 7, and 9"
     )*
     (item "8"
         <(remove (hex Diamond 9) cells:{36 28 21 15 10 6 3 1 0})>
-        <{"B10" "C9" "D8" "E7" "F6" "G5" "H4" "I3" "J2"}>        // Pawn1Start
-        <"M11">                // King2Start
-        <"K13">                // Queen2Start
-        <"H16">                // RookLeft2Start
-        <"P8">                 // RookRight2Start
-        <{"J14" "L12" "N10"}>  // Bishop2Start
-        <{"I15" "O9"}>         // Knight2Start
-        <{"G15" "H14" "I13" "J12" "K11" "L10" "M9" "N8" "O7"} >  // Pawn2Start
-        <2>
-        <1>
-        <0>
+        <{"B9" "B8" "B7" "B6" "B5" "B4" "B3" "B2" "B1"}>  // Pawn1Start
+        <"H6">              // King2Start
+        <"H4">              // Queen2Start
+        <"H9">              // RookLeft2Start
+        <"H1">              // RookRight2Start
+        <{"H7" "H5" "H3"}>  // Bishop2Start
+        <{"H8" "H2"}>       // Knight2Start
+        <{"G9" "G8" "G7" "G6" "G5" "G4" "G3" "G2" "G1"}>  // Pawn2Start
+        <2>                 // Dark color region
+        <1>                 // Light color region
+        <0>                 // Medium color region
         "9x8 rhombus-shaped board, with pieces on rows 1, 2, 7, and 8"
     )
     }
@@ -428,13 +427,13 @@
 
     (info
         {
-        (version "0.9.4")
+        (version "1.0.5")
 
         (description "A chess variant played on a board made of hexagons")
-        (aliases { "De Vasa's Chess" "Hexagonal Chess" })
+        (aliases { "de Vasa Chess" "de Vasa's Chess" "De Vasa's Chess" "Hexagonal Chess" })
         (origin "De Vasa Chess was invented by Helge E. de Vasa in 1953-1954. The rules originally called for eight rows, but a variant with nine rows later became more popular.")
         (classification "board/war/chess")
-        (credit "Jay Coskey, with some small functions drawn from Chess.lud, by Eric Piette")
+        (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
 
         (rules "De Vasa Chess is most commonly played on a 9x9 rhombus-shaped board with 81 spaces. It is sometimes played on the original layout, involving a 9x8 rhombus-shaped board with only 72 spaces.
 

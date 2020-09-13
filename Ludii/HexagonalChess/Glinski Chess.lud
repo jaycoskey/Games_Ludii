@@ -1,5 +1,5 @@
 // Glinski Chess
-// Copyright 2020, Jay M. Coskey, except functions drawn from Chess.lud, as noted
+// Copyright 2020, Jay M. Coskey, except snippets from Chess.lud, as noted
 
 //----------------------------------------
 // General functions
@@ -34,7 +34,7 @@
 // Source: Chess.lud - NextCanNotMove
 (define "NextCannotMove"
     (not (can Move (do
-                (forEach Piece (next))
+                (forEach Piece Next)
                 ifAfterwards:(not ("IsInCheck" "King" Next))
     )))
 )
@@ -78,7 +78,7 @@
 //----------------------------------------
 
 (define "IsFromInStartCell"
-    (is In (from) (sites Start (what at:(from))))
+    (is In (from) (sites Start (piece (what at:(from)))))
 )
 
 // Source: Derived from Chess.lud - DoubleStep
@@ -151,7 +151,7 @@
 
 // Usage: ("PromoteTo" <piece_types>)
 (define "PromoteTo"
-    (move Promote (last To) #1 (who Mover))
+    (move Promote (last To) #1 Mover)
 )
 
 //------------------------------------------------------------------------------
@@ -166,7 +166,8 @@
         (piece "Queen"  Each ("SlideCaptureMove" All ~))
         (piece "Rook"   Each ("SlideCaptureMove" Orthogonal ~))
         (piece "Bishop" Each ("SlideCaptureMove" Diagonal ~))
-        (piece "Knight" Each (leap
+        (piece "Knight" Each (move
+                Leap
                 "KnightWalk"
                 (to if:"IsToEmptyOrEnemy"
                     "CaptureToPieceAndResetCounter"
@@ -197,24 +198,24 @@
 
         (regions "Region-Dark"   (sites Phase 0))
         (regions "Region-Light"  (sites Phase 2))
-        (regions "Region-Medium" (sites Phase 2))
+        (regions "Region-Medium" (sites Phase 1))
         }
     )
 
     (rules
         (start
             {
-            (place "King1" coord:"G2")
-            (place "Queen1" coord:"E2")
-            (place "Rook1" {"C4" "I4"})
-            (place "Bishop1" {"F1" "F3" "F5"})
-            (place "Knight1" {"D3" "H3"})
+            (place "King1" coord:"B1")
+            (place "Queen1" coord:"A2")
+            (place "Rook1" {"A4" "D1"})
+            (place "Bishop1" {"A1" "B2" "C3"})
+            (place "Knight1" {"A3" "C1"})
 
-            (place "King2" coord:"G20")
-            (place "Queen2" coord:"E20")
-            (place "Rook2" {"C18" "I18"})
-            (place "Bishop2" {"F17" "F19" "F21"})
-            (place "Knight2" {"D19" "H19"})
+            (place "King2" coord:"K10")
+            (place "Queen2" coord:"J11")
+            (place "Rook2" {"H11" "K8"})
+            (place "Bishop2" {"I9" "J10" "K11"})
+            (place "Knight2" {"I11" "K9"})
 
             (place "Pawn1" <Placement:Pawn1>)
             (place "Pawn2" <Placement:Pawn2>)
@@ -225,7 +226,7 @@
         (phase "Movement"
             (play
                 (if ("SameTurn")
-                    ("PromoteTo" (what {"Queen" "Rook" "Bishop" "Knight"}))
+                    ("PromoteTo" (piece {"Queen" "Rook" "Bishop" "Knight"}))
                     (do (forEach Piece)
                         ifAfterwards:(not ("IsInCheck" "King" Mover))
                     )
@@ -257,18 +258,18 @@
 (option "Placemet of Pawns" <Placement> args:{<Pawn1> <Pawn2>}
     {
     (item "Standard Pawn positions"
-        < {"B5" "C6" "D7" "E8" "F9" "G8" "H7" "I6" "J5"} >
-        < {"B17" "C16" "D15" "E14" "F13" "G14" "H15" "I16" "J17"} >
+        < {"A5"  "B5"  "C5" "D5" "E5" "E4" "E3" "E2" "E1"} >
+        < {"G11" "G10" "G9" "G8" "G7" "H7" "I7" "J7" "K7"} >
         "Pawns in the starting position chosen by Władysław Gliński in 1936"
     )*
     (item "3 Pawns shifted one space"
-        < {"B5" "C6" "D7" "E6" "F7" "G6" "H7" "I6" "J5"} >
-        < {"B17" "C16" "D15" "E16" "F15" "G16" "H15" "I16" "J17"} >
+        < {"A5"  "B5"  "C5" "C4" "D4" "D3" "E3" "E2" "E1"} >
+        < {"G11" "G10" "G9" "H9" "H8" "I8" "I7" "J7" "K7"} >
         "Glinski Chess with 3 Pawns shifted one space toward the board's edge"
     )
     (item "5 Pawns shifted one space"
-        < {"B5" "C6" "D5" "E6" "F7" "G6" "H5" "I6" "J5"} >
-        < {"B17" "C16" "D17" "E16" "F15" "G16" "H17" "I16" "J17"} >
+        < {"A5"  "B5"  "B4"  "C4" "D4" "D3" "D2" "E2" "E1"} >
+        < {"G11" "G10" "H10" "H9" "H8" "I8" "J8" "J7" "K7"} >
         "Glinski Chess with 5 Pawns shifted one space toward the board's edge"
     )
     }
@@ -280,13 +281,13 @@
 
     (info
         {
-        (version "0.9.4")
+        (version "1.0.5")
 
         (description "A chess variant played on a board made of hexagons")
         (aliases { "Gliński's Chess" "Glinski's Chess" "Hexagonal Chess" })
         (origin  "Glinski Chess was invented in 1936 by Władysław Gliński, and first launched in 1949. It is the most popular variant of hexagonal chess.")
         (classification "board/war/chess")
-        (credit "Jay Coskey, with some small functions drawn from Chess.lud, by Eric Piette")
+        (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
 
         (rules "Glinski Chess is played on a hexagonal board with each side having length 6, and each space oriented horizontally. The board has 91 spaces.
 

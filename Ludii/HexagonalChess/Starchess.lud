@@ -1,5 +1,5 @@
 // Starchess
-// Copyright 2020, Jay M. Coskey, except functions drawn from Chess.lud, as noted
+// Copyright 2020, Jay M. Coskey, except snippets from Chess.lud, as noted
 
 //----------------------------------------
 // General functions
@@ -22,7 +22,7 @@
 )
 
 (define "IsFromInStartCell"
-    (is In (from) (sites Start (what at:(from))))
+    (is In (from) (sites Start (piece (what at:(from)))))
 )
 
 (define "IsToEmpty"
@@ -38,7 +38,7 @@
 // Source: Chess.lud - NextCanNotMove
 (define "NextCannotMove"
     (not (can Move (do
-                (forEach Piece (next))
+                (forEach Piece Next)
                 ifAfterwards:(not ("IsInCheck" "King" Next))
     )))
 )
@@ -50,7 +50,7 @@
 
 // Usage: ("PromoteTo" <piece_types>)
 (define "PromoteTo"
-    (move Promote (last To) #1 (who Mover))
+    (move Promote (last To) #1 Mover)
 )
 
 // Usage: ("SlideCaptureMove" <directions> <then>)
@@ -165,7 +165,8 @@
             ("SlideCaptureMove" (directions {WNW ENE WSW ESE}) ~)
         )
         (piece "Knight" Each
-            (leap
+            (move
+                Leap
                 "KnightWalk"
                 (to if:"IsToEmptyOrEnemy"
                     "CaptureToPieceAndResetCounter"
@@ -193,8 +194,8 @@
 
         (hand Each size:5)
 
-        (regions "Home" P1 (sites {"C1"  "D2"  "E3"  "F2"  "G1"}))
-        (regions "Home" P2 (sites {"C13" "D12" "E11" "F12" "G13"}))
+        (regions "Home" P1 (sites {"A3" "B3" "C3" "C2" "C1"}))
+        (regions "Home" P2 (sites {"G9" "G8" "G7" "H7" "I7"}))
 
         (regions "PromotionZone" P1 (sites P2 "Home"))
         (regions "PromotionZone" P2 (sites P1 "Home"))
@@ -214,15 +215,15 @@
             (place "Bishop" "Hand" count:1)
             (place "Knight" "Hand" count:1)
 
-            (place "Pawn1" {"C3"  "D4"  "E5" "F4"  "G3"})
-            (place "Pawn2" {"C11" "D10" "E9" "F10" "G11"})
+            (place "Pawn1" {"B4" "C4" "D4" "D3" "D2"})
+            (place "Pawn2" {"F8" "F7" "F6" "G6" "H6"})
             }
         )
         phases:{
         (phase "Placement"
             (play
                 (move
-                    (from (sites Occupied by:Mover container:(mover)))
+                    (from (sites Occupied by:Mover container:"Hand"))
                     (to (intersection (sites Mover "Home") (sites Empty)))
                 )
             )
@@ -231,7 +232,7 @@
         (phase "Movement"
             (play
                 (if ("SameTurn")
-                    ("PromoteTo" (what {"Queen" "Rook" "Bishop" "Knight"}))
+                    ("PromoteTo" (piece {"Queen" "Rook" "Bishop" "Knight"}))
                     (do (forEach Piece)
                         ifAfterwards:(not ("IsInCheck" "King" Mover))
                     )
@@ -264,13 +265,13 @@
 
     (info
         {
-        (version "0.9.4")
+        (version "1.0.5")
 
         (description "A chess variant played on a board made of hexagons")
         (aliases { "Hexagonal Chess" })
         (origin "Starchess was invented by László Polgár.")
         (classification "board/war/chess")
-        (credit "Jay Coskey, with some small functions drawn from Chess.lud, by Eric Piette")
+        (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
 
         (rules "Starchess is played on a star-shaped hexagonal board that can be thought of as a hexagon-shaped board with each side having length 6, but with four spaces removed from each corner. The board has 37 spaces.
 

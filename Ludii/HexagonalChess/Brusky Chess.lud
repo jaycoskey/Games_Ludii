@@ -1,5 +1,5 @@
 // Brusky Chess
-// Copyright 2020, Jay M. Coskey, except functions drawn from Chess.lud, as noted
+// Copyright 2020, Jay M. Coskey, except snippets from Chess.lud, as noted
 
 //----------------------------------------
 // General functions
@@ -22,7 +22,7 @@
 )
 
 (define "IsFromInStartCell"
-    (is In (from) (sites Start (what at:(from))))
+    (is In (from) (sites Start (piece (what at:(from)))))
 )
 
 (define "IsToEmpty"
@@ -38,7 +38,7 @@
 // Source: Chess.lud - NextCanNotMove
 (define "NextCannotMove"
     (not (can Move (do
-                (forEach Piece (next))
+                (forEach Piece Next)
                 ifAfterwards:(not ("IsInCheck" "King" Next))
     )))
 )
@@ -72,7 +72,7 @@
 
 // Source: Chess.lud - PieceHasMoved
 (define "History_SaveMovement"
-    (set State (last To) 0)
+    (set State at:(last To) 0)
 )
 
 // Source: Chess.lud - RememberPieceHasMoved
@@ -159,8 +159,13 @@
     )
 )
 
-(define "Castle_KingSide"  ("Castle" E 2 "RookRight" W 2))
-(define "Castle_QueenSide" ("Castle" W 3 "RookLeft"  E 3))
+(define "Castle_Kingside_P1"  ("Castle" E 2 "RookRight" W 2))
+(define "Castle_Kingside_P2"  ("Castle" W 2 "RookLeft"  E 2))
+(define "Castle_Kingside" ("P12" "Castle_Kingside_P1"  "Castle_Kingside_P2"))
+
+(define "Castle_Queenside_P1" ("Castle" W 3 "RookLeft"  E 3))
+(define "Castle_Queenside_P2" ("Castle" E 3 "RookRight" W 3))
+(define "Castle_Queenside" ("P12" "Castle_Queenside_P1" "Castle_Queenside_P2")
 
 //----------------------------------------
 // Pawn movement
@@ -279,7 +284,7 @@
 
 // Usage: ("PromoteTo" <piece_types>)
 (define "PromoteTo"
-    (move Promote (last To) #1 (who Mover))
+    (move Promote (last To) #1 Mover)
 )
 
 //------------------------------------------------------------------------------
@@ -300,8 +305,8 @@
                 ("KingCaptureStep" All "History_SaveMovementChange")
                 (if "Castle_PreCheck"
                     (or {
-                        "Castle_KingSide"
-                        "Castle_QueenSide"
+                        "Castle_Kingside"
+                        "Castle_Queenside"
                         }
                     )
                 )
@@ -311,8 +316,8 @@
         (piece "Queen"  Each ("SlideCaptureMove" All ~))
         (piece "Rook"   Each ("SlideCaptureMove" Orthogonal "History_SaveMovementChange"))
         (piece "Bishop" Each ("SlideCaptureMove" Diagonal ~))
-        (piece "Knight" Each
-            (leap
+        (piece "Knight" Each (move
+                Leap
                 "KnightWalk"
                 (to if:"IsToEmptyOrEnemy"
                     "CaptureToPieceAndResetCounter"
@@ -353,9 +358,9 @@
             )
         )
 
-        (map "King"      {(pair 1 "O1") (pair 2 "N8")})
-        (map "RookLeft"  {(pair 1 "E1") (pair 2 "D8")})
-        (map "RookRight" {(pair 1 "U1") (pair 2 "T8")})
+        (map "King"      {(pair 1 "F1") (pair 2 "G8")})
+        (map "RookLeft"  {(pair 1 "A1") (pair 2 "D8")})
+        (map "RookRight" {(pair 1 "I1") (pair 2 "L8")})
 
         (regions "PromotionZone" P1 (sites Top))
         (regions "PromotionZone" P2 (sites Bottom))
@@ -369,27 +374,27 @@
     (rules
         (start
             {
-            (place "King1"   coord:"O1" state:1)
-            (place "Queen1"  coord:"K1")
-            (place "Rook1"   {"E1" "U1"} state:1)
-            (place "Bishop1" {"I1" "M1" "Q1"})
-            (place "Knight1" {"G1" "S1"})
+            (place "King1"   coord:"F1" state:1)
+            (place "Queen1"  coord:"D1")
+            (place "Rook1"   {"A1" "I1"} state:1)
+            (place "Bishop1" {"C1" "E1" "G1"})
+            (place "Knight1" {"B1" "H1"})
 
-            (place "King2"   coord:"N8" state:1)
-            (place "Queen2"  coord:"J8")
-            (place "Rook2"   {"D8" "T8"} state:1)
-            (place "Bishop2" {"H8" "L8" "P8"})
-            (place "Knight2" {"F8" "R8"})
+            (place "King2"   coord:"G8" state:1)
+            (place "Queen2"  coord:"I8")
+            (place "Rook2"   {"D8" "L8"} state:1)
+            (place "Bishop2" {"F8" "H8" "J8"})
+            (place "Knight2" {"E8" "K8"})
 
-            (place "Pawn1" {"D2" "F2" "H2" "J2" "L2" "N2" "P2" "R2" "T2" "V2"})
-            (place "Pawn2" {"C7" "E7" "G7" "I7" "K7" "M7" "O7" "Q7" "S7" "U7"})
+            (place "Pawn1" {"A2" "B2" "C2" "D2" "E2" "F2" "G2" "H2" "I2" "J2"})
+            (place "Pawn2" {"C7" "D7" "E7" "F7" "G7" "H7" "I7" "J7" "K7" "L7"})
             }
         )
         phases:{
         (phase "Movement"
             (play
                 (if ("SameTurn")
-                    ("PromoteTo" (what {"Queen" "Rook" "Bishop" "Knight"}))
+                    ("PromoteTo" (piece {"Queen" "Rook" "Bishop" "Knight"}))
                     (do (forEach Piece)
                         ifAfterwards:(not ("IsInCheck" "King" Mover))
                     )
@@ -422,13 +427,13 @@
 
     (info
         {
-        (version "0.9.4")
+        (version "1.0.5")
 
         (description "A chess variant played on a board made of hexagons")
         (aliases { "Brusky's Chess" "Hexagonal Chess" })
         (origin "Brusky Chess was invented by Yakov Brusky 1966.")
         (classification "board/war/chess")
-        (credit "Jay Coskey, with some small functions drawn from Chess.lud, by Eric Piette")
+        (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
 
         (rules "Brusky Chess is played on a hexagonal board with sides of length 4, 5, and 9, and each space oriented vertically. It has 84 spaces.
 
