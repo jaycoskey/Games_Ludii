@@ -1,6 +1,5 @@
 // Shafran Chess
 // Copyright 2020, Jay M. Coskey, except snippets from Chess.lud, as noted
-// 2020-07-22: BUG: En passant not working after 3-space initial Pawn move.
 
 //----------------------------------------
 // General functions
@@ -222,7 +221,6 @@
 // Shafran Chess includes an initial Pawn moves with a 3-space jump.
 // This allows an e.p. capture to any of the skipped spaces.
 // Source: Modified from Double Chess.lud - JumpOfPawn
-// 2020-07-22: BUG: En passant not working after 3-space initial Pawn move.
 (define "PawnStep_Triple"
     (move
         Hop
@@ -262,7 +260,7 @@
 (define "IsEnPassantCapture"
     (and
         (is Pending)
-        (= (to) (value Pending))
+        (is In (to) (sites Pending))
     )
 )
 
