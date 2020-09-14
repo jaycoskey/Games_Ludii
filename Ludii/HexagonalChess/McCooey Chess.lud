@@ -270,7 +270,7 @@
         (classification "board/war/chess")
         (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
 
-        (rules "McCooey Chess is played on a hexagonal board with each side having length 6, and each space oriented horizontally. The board has has 91 spaces.
+        (rules "McCooey Chess is played on a hexagonal board with each side having length 6. The board has has 91 horizontally-oriented spaces.
 
 Piece Movement:
   * All pieces other than Pawns move as in Glinski Chess.

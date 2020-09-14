@@ -289,7 +289,7 @@
         (classification "board/war/chess")
         (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
 
-        (rules "Glinski Chess is played on a hexagonal board with each side having length 6, and each space oriented horizontally. The board has 91 spaces.
+        (rules "Glinski Chess is played on a hexagonal board with each side having length 6. The board has 91 horizontally-oriented spaces.
 
 Piece Movement:
     * Kings can move one space in any of the 12 directions from the current space. There is no castling.

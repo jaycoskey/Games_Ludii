@@ -436,7 +436,8 @@
         (classification "board/war/chess")
         (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
 
-        (rules "Brusky Chess is played on a hexagonal board with sides of length 4, 5, and 9, and each space oriented vertically. It has 84 spaces.
+        (rules "Brusky Chess is played on a hexagonal board with sides of length 4, 5, and 9. It has 84 vertically-oriented spaces.
+
 Piece Movement:
   * Queens, Rooks, Bishops, and Knights move as in Glinski Chess.
       - Queens slide in any of the 12 directions.

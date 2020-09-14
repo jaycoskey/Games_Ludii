@@ -273,7 +273,7 @@
         (classification "board/war/chess")
         (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
 
-        (rules "Starchess is played on a star-shaped hexagonal board that can be thought of as a hexagon-shaped board with each side having length 6, but with four spaces removed from each corner. The board has 37 spaces.
+        (rules "Starchess is played on a star-shaped hexagonal board that can be thought of as a hexagon-shaped board with each side having length 6, but with four spaces removed from each corner. The board has 37 horizontally-oriented spaces.
 
 Starchess starts off with the non-Pawn pieces being placed behind the Pawns. This happens one piece at a time, in alternating turns, until all non-Pawn pieces have been placed. Then the 'movement phase' of the game begins as usual.
 

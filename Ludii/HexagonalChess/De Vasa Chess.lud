@@ -435,7 +435,7 @@
         (classification "board/war/chess")
         (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
 
-        (rules "De Vasa Chess is most commonly played on a 9x9 rhombus-shaped board with 81 spaces. It is sometimes played on the original layout, involving a 9x8 rhombus-shaped board with only 72 spaces.
+        (rules "De Vasa Chess is most commonly played on a 9x9 rhombus-shaped board with 81 spaces. It is sometimes played on the original layout, involving a 9x8 rhombus-shaped board with only 72 vertically-oriented spaces.
 
 Piece Movement:
   * All pieces other than Kings and Pawns move as in Glinski Chess.

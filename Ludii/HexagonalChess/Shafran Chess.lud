@@ -424,7 +424,7 @@
         (classification "board/war/chess")
         (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
 
-        (rules "Shafran Chess is played on a 'narrow' hexagonal board that can be thought of as a hexagonal board of size 6 with some outer spaces removed. The board has 70 spaces.
+        (rules "Shafran Chess is played on a 'narrow' hexagonal board that can be thought of as a hexagonal board of size 6, and some outer spaces removed. The board has 70 horizontally-oriented spaces.
 
 Piece Movement:
   * Queens, Rooks, Bishops, and Knights move as in Glinski Chess.
