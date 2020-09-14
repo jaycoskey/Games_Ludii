@@ -265,13 +265,8 @@
 
     (info
         {
-        (version "1.0.5")
-
         (description "A chess variant played on a board made of hexagons")
-        (aliases { "Hexagonal Chess" })
-        (origin "Starchess was invented by László Polgár.")
-        (classification "board/war/chess")
-        (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
+        (aliases {"Hexagonal Chess"})
 
         (rules "Starchess is played on a star-shaped hexagonal board that can be thought of as a hexagon-shaped board with each side having length 6, but with four spaces removed from each corner. The board has 37 horizontally-oriented spaces.
 
@@ -291,19 +286,26 @@ The game ends on a checkmate or stalemate.
 Some terminology: a Pawn off to the side, in one of the two spaces at the extremes of the middle row is called a 'mummy', while a Pawn in one of the spaces adjacent to that is called a 'dead Pawn'. Mummies and dead Pawns cannot be promoted until they return to one of the innermost five columns.
 ")
 
-        (source "For a comparison of popular versions of hexagonal chess, see https://en.wikipedia.org/wiki/Hexagonal_chess. For more details on other chess variants, see The Classified Encyclopedia of Chess Variants, by D. B. Pritchard (2nd edition, completed and edited by John Beasley, 2007).")
+        (source "For a comparison of popular versions of hexagonal chess, see Wikipedia (https://en.wikipedia.org/wiki/Hexagonal_chess\"). For more details on other chess variants, see The Classified Encyclopedia of Chess Variants, by D. B. Pritchard (2nd edition, completed and edited by John Beasley, 2007).")
+        (version "1.0.5")
+        (classification "board/war/chess")
+        (author "László Polgár")
+        (origin "Starchess was invented by László Polgár.")
+        (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
         }
     )
 
     (graphics {
-        (show Check)
-        (piece Scale "Pawn" 0.825)
+        (piece Scale "Pawn" 0.7)
+        (piece Scale "King" 0.8)
+        (piece Scale "Knight" 0.8)
+        (piece Scale "Queen" 0.8)
+        (piece Scale "Bishop" 0.8)
+        (piece Scale "Rook" 0.8)
         (board Style Chess)
 
         (region Colour "Region-Dark"   (colour "#b5651d"))
         (region Colour "Region-Light"  (colour "#fff8dc"))
         (region Colour "Region-Medium" (colour "#daae7c"))
     })
-
-    (ai "Starchess_ai")
 )

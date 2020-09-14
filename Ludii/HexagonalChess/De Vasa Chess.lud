@@ -427,13 +427,8 @@
 
     (info
         {
-        (version "1.0.5")
-
         (description "A chess variant played on a board made of hexagons")
         (aliases { "de Vasa Chess" "de Vasa's Chess" "De Vasa's Chess" "Hexagonal Chess" })
-        (origin "De Vasa Chess was invented by Helge E. de Vasa in 1953-1954. The rules originally called for eight rows, but a variant with nine rows later became more popular.")
-        (classification "board/war/chess")
-        (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
 
         (rules "De Vasa Chess is most commonly played on a 9x9 rhombus-shaped board with 81 spaces. It is sometimes played on the original layout, involving a 9x8 rhombus-shaped board with only 72 vertically-oriented spaces.
 
@@ -449,19 +444,26 @@ Piece Movement:
 The game ends on a checkmate or stalemate.
 ")
 
-        (source "For a comparison of popular versions of hexagonal chess, see https://en.wikipedia.org/wiki/Hexagonal_chess. For more details on other chess variants, see The Classified Encyclopedia of Chess Variants, by D. B. Pritchard (2nd edition, completed and edited by John Beasley, 2007).")
+        (source "For a comparison of popular versions of hexagonal chess, see Wikipedia (https://en.wikipedia.org/wiki/Hexagonal_chess. For more details on other chess variants, see The Classified Encyclopedia of Chess Variants, by D. B. Pritchard (2nd edition, completed and edited by John Beasley, 2007).")
+        (version "1.0.5")
+        (classification "board/war/chess")
+        (author "Helge E. de Vasa")
+        (origin "De Vasa Chess was invented by Helge E. de Vasa in 1953-1954. The rules originally called for eight rows, but a variant with nine rows later became more popular.")
+        (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
         }
     )
 
     (graphics {
-        (show Check)
-        (piece Scale "Pawn" 0.825)
+        (piece Scale "Pawn" 0.7)
+        (piece Scale "King" 0.8)
+        (piece Scale "Knight" 0.8)
+        (piece Scale "Queen" 0.8)
+        (piece Scale "Bishop" 0.8)
+        (piece Scale "Rook" 0.8)
         (board Style Chess)
 
         (region Colour "Region-Dark"   (colour "#b5651d"))
         (region Colour "Region-Light"  (colour "#fff8dc"))
         (region Colour "Region-Medium" (colour "#daae7c"))
     })
-
-    (ai "De Vasa Chess_ai")
 )

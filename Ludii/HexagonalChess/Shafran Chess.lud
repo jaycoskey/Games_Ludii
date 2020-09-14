@@ -416,13 +416,8 @@
 
     (info
         {
-        (version "1.0.5")
-
         (description "A chess variant played on a board made of hexagons")
-        (aliases { "Shafran's Chess" "Hexagonal Chess" })
-        (origin "Shafran Chess was invented by Isaak Grigorevich Shafran in 1939, and registered in 1956.")
-        (classification "board/war/chess")
-        (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
+        (aliases {"Shafran's Chess" "Hexagonal Chess"})
 
         (rules "Shafran Chess is played on a 'narrow' hexagonal board that can be thought of as a hexagonal board of size 6, and some outer spaces removed. The board has 70 horizontally-oriented spaces.
 
@@ -436,19 +431,26 @@ Piece Movement:
   * Pawns can advance one space forward without capturing. A Pawn on a Pawn start space can advance any number of spaces, up to the middle row of the board. Thus the outermost Pawns on their first moves can only advance one space, while the Pawns in the three innermost columns can advance up to three spaces. Pawns capture 'diagonally forward' (i.e., to a space ahead connected by an edge, and having the same colour). En passant capture works as in Glinski chess, except that if the opponent just advanced a Pawn three spaces, then the next player can perform en passant capture by landing a Pawn on either of the two spaces that the opponent Pawn just skipped over. On reaching the farthest rank in a given file, Pawns are promoted to a Queen, Rook, Bishop, or Knight, as the player chooses.
 ")
 
-        (source "For a comparison of popular versions of hexagonal chess, see https://en.wikipedia.org/wiki/Hexagonal_chess. For more details on other chess variants, see The Classified Encyclopedia of Chess Variants, by D. B. Pritchard (2nd edition, completed and edited by John Beasley, 2007).")
+        (source "For a comparison of popular versions of hexagonal chess, see Wikipedia (https://en.wikipedia.org/wiki/Hexagonal_chess). For more details on other chess variants, see The Classified Encyclopedia of Chess Variants, by D. B. Pritchard (2nd edition, completed and edited by John Beasley, 2007).")
+        (version "1.0.5")
+        (classification "board/war/chess")
+        (author "Isaak Grigorevich Shafran")
+        (origin "Shafran Chess was invented by Isaak Grigorevich Shafran in 1939, and registered in 1956.")
+        (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
         }
     )
 
     (graphics {
-        (show Check)
-        (piece Scale "Pawn" 0.825)
+        (piece Scale "Pawn" 0.7)
+        (piece Scale "King" 0.8)
+        (piece Scale "Knight" 0.8)
+        (piece Scale "Queen" 0.8)
+        (piece Scale "Bishop" 0.8)
+        (piece Scale "Rook" 0.8)
         (board Style Chess)
 
         (region Colour "Region-Dark"   (colour "#b5651d"))
         (region Colour "Region-Light"  (colour "#fff8dc"))
         (region Colour "Region-Medium" (colour "#daae7c"))
     })
-
-    (ai "Shafran Chess_ai")
 )
