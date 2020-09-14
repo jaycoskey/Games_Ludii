@@ -165,7 +165,7 @@
 
 (define "Castle_Queenside_P1" ("Castle" W 3 "RookLeft"  E 3))
 (define "Castle_Queenside_P2" ("Castle" E 3 "RookRight" W 3))
-(define "Castle_Queenside" ("P12" "Castle_Queenside_P1" "Castle_Queenside_P2")
+(define "Castle_Queenside" ("P12" "Castle_Queenside_P1" "Castle_Queenside_P2"))
 
 //----------------------------------------
 // Pawn movement
@@ -334,6 +334,7 @@
                             (or {
                                 "StepOrthoToEmpty"
                                 "PawnStep_Double"
+                                "PawnCapture_Diag"
                                 }
                             )
                         )
@@ -436,7 +437,6 @@
         (credit "Jay Coskey, with snippets, as noted, from Chess.lud by Eric Piette")
 
         (rules "Brusky Chess is played on a hexagonal board with sides of length 4, 5, and 9, and each space oriented vertically. It has 84 spaces.
-
 Piece Movement:
   * Queens, Rooks, Bishops, and Knights move as in Glinski Chess.
       - Queens slide in any of the 12 directions.
