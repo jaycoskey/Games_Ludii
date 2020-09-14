@@ -441,12 +441,13 @@ Piece Movement:
     )
 
     (graphics {
-        (piece Scale "Pawn" 0.7)
         (piece Scale "King" 0.8)
-        (piece Scale "Knight" 0.8)
         (piece Scale "Queen" 0.8)
-        (piece Scale "Bishop" 0.8)
         (piece Scale "Rook" 0.8)
+        (piece Scale "Bishop" 0.8)
+        (piece Scale "Knight" 0.8)
+        (piece Scale "Pawn" 0.7)
+
         (board Style Chess)
 
         (region Colour "Region-Dark"   (colour "#b5651d"))
